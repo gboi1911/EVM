@@ -1,8 +1,5 @@
 /* src/index.css */
 @import "tailwindcss";
-/* 1. Tailwind Directives - MUST BE AT THE TOP */
-/* @tailwind base;
-@tailwind components; */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -33,8 +30,8 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* display: flex;
+  place-items: center; */
   min-width: 320px;
   min-height: 100vh;
 }
