@@ -1,26 +1,72 @@
-import { Form, Input, Button, Checkbox, Card } from "antd";
+import { Form, Input, Button, Checkbox, Card, notification } from "antd";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "../assets/logo.png";
+import { login } from "../api/authen";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  const onFinish = (values) => {
-    console.log("Login success:", values);
-    // TODO: Call your API here
-  };
-
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const handleLogin = () => {
-    // fake check
-    if (username && password) {
-      navigate("/home");
-    } else {
-      alert("Please enter username and password");
+  const [form] = Form.useForm();
+
+  // useEffect(() => {
+  //   const rememberedUsername = localStorage.getItem("remembered_username");
+  //   const rememberedPassword = localStorage.getItem("remembered_password");
+  //   if (rememberedUsername && rememberedPassword) {
+  //     form.setFieldsValue({
+  //       username: rememberedUsername,
+  //       password: rememberedPassword,
+  //       remember: true,
+  //     });
+  //     setUsername(rememberedUsername);
+  //     setPassword(rememberedPassword);
+  //   }
+  // }, [form]);
+
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      const data = await login(values.username, values.password);
+      if (values.remember) {
+        localStorage.setItem("remembered_username", values.username);
+        localStorage.setItem("remembered_password", values.password);
+      } else {
+        localStorage.removeItem("remembered_username");
+        localStorage.removeItem("remembered_password");
+      }
+      notification.success({
+        message: "Đăng nhập thành công!",
+        description: "Chào mừng bạn đến với hệ thống EVD.",
+        placement: "topRight",
+      });
+      if (data.role === "EVM_ADMIN" || data.role === "EVM_STAFF") {
+        navigate("/homeEVM");
+      } else if (
+        data.role === "DEALER_MANAGER" ||
+        data.role === "DEALER_STAFF"
+      ) {
+        navigate("/homeDealer");
+      }
+    } catch (error) {
+      console.log("Login error:", error);
+      if (error.message === "401" || error.message.includes("401")) {
+        notification.error({
+          message: "Đăng nhập thất bại!",
+          description: "Sai tài khoản hoặc mật khẩu.",
+          placement: "topRight",
+        });
+      } else {
+        notification.error({
+          message: "Đăng nhập thất bại!",
+          description: "Login failed! Please check your credentials.",
+          placement: "topRight",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,6 +99,7 @@ export default function Login() {
           </div>
 
           <Form
+            // form={form}
             name="login"
             initialValues={{ remember: true }}
             onFinish={onFinish}
@@ -100,7 +147,7 @@ export default function Login() {
                 htmlType="submit"
                 size="large"
                 className="w-full bg-emerald-600 hover:bg-emerald-700"
-                onClick={handleLogin}
+                loading={loading}
               >
                 Log in
               </Button>

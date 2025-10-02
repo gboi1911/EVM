@@ -1,12 +1,21 @@
 import React from "react";
 import Navbar from "./Navbar";
+import NavbarEVM from "./NavbarEVM";
 import AppFooter from "./Footer";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 const MainLayout = () => {
+  const location = useLocation();
+
+  // Choose navbar based on path
+  let NavbarComponent = Navbar;
+  if (location.pathname.startsWith("/homeEVM")) {
+    NavbarComponent = NavbarEVM;
+  }
+
   return (
     <div>
-      <Navbar />
+      <NavbarComponent />
       <main>
         <Outlet />
       </main>

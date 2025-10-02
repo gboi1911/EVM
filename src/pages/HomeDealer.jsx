@@ -1,9 +1,18 @@
 import { Carousel } from "antd";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import banner1 from "../assets/banner1.webp";
 import banner2 from "../assets/banner2.jpg";
 import banner3 from "../assets/banner3.jpg";
 
 export default function Home() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!localStorage.getItem("access_token")) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8">
       {/* Auto move banner */}
