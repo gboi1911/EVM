@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, Statistic, Row, Col } from "antd";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import {
   CarOutlined,
   ShopOutlined,
@@ -84,6 +84,7 @@ export default function HomeEVM() {
           </ul>
         </Card>
       </div>
+      <Outlet />
     </div>
   );
 }

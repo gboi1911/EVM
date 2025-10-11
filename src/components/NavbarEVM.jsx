@@ -86,13 +86,24 @@ export default function NavbarEVM() {
 
   const handleMenuClick = (e) => {
     if (e.key === "account") {
-      navigate("/manage-account");
+      navigate("/homeEVM/manage-account");
+    }
+    if (e.key === "catalog") {
+      navigate("/homeEVM/manage-category");
     }
     // Add more navigation logic for other keys if needed
   };
 
   return (
-    <Header className="flex items-center bg-emerald-700 px-6">
+    <Header
+      className="flex items-center bg-emerald-700 px-6 z-50"
+      style={{
+        position: "sticky",
+        top: 0,
+        width: "100%",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      }}
+    >
       {/* Logo and title */}
       <div className="flex items-center mr-10">
         <img src={logo} alt="EV Logo" className="h-10 w-auto" />
