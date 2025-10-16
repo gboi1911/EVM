@@ -9,6 +9,8 @@ const HomeEVM = React.lazy(() => import("./pages/HomeEVM"));
 const Login = React.lazy(() => import("./pages/Login"));
 const ManageAccount = React.lazy(() => import("./pages/EVM/ManageAccount"));
 const ManageCategory = React.lazy(() => import("./pages/EVM/ManageCategory"));
+const ManageInventory = React.lazy(() => import("./pages/EVM/ManageInventory"));
+const ManagePrice = React.lazy(() => import("./pages/EVM/ManagePrice"));
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
             <Route path="homeEVM" element={<HomeEVM />}>
               <Route path="manage-account" element={<ManageAccount />} />
               <Route path="manage-category" element={<ManageCategory />} />
+              <Route path="manage-inventory" element={<ManageInventory />} />
+              <Route path="manage-price" element={<ManagePrice />} />
             </Route>
           </Route>
         </Routes>

@@ -5,26 +5,52 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   Space,
   Popconfirm,
   notification,
   Card,
-  Select,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SwapOutlined,
+} from "@ant-design/icons";
 
 // Dummy API functions (replace with your real API)
-const fetchCategories = async () => [
-  { id: 1, model: "VF e34", version: "Premium", color: "Trắng" },
-  { id: 2, model: "VF 8", version: "Eco", color: "Đen" },
-  { id: 3, model: "VF 9", version: "Plus", color: "Xanh" },
+const fetchInventory = async () => [
+  {
+    id: 1,
+    model: "VF e34",
+    version: "Premium",
+    color: "Trắng",
+    quantity: 20,
+    dealer: "Đại lý Hà Nội",
+  },
+  {
+    id: 2,
+    model: "VF 8",
+    version: "Eco",
+    color: "Đen",
+    quantity: 10,
+    dealer: "Đại lý Hồ Chí Minh",
+  },
+  {
+    id: 3,
+    model: "VF 9",
+    version: "Plus",
+    color: "Xanh",
+    quantity: 5,
+    dealer: "Đại lý Đà Nẵng",
+  },
 ];
-const addCategory = async (data) => ({
+const addInventory = async (data) => ({
   ...data,
   id: Math.floor(Math.random() * 1000),
 });
-const updateCategory = async (id, data) => ({ id, ...data });
-const removeCategory = async (id) => true;
+const updateInventory = async (id, data) => ({ id, ...data });
+const removeInventory = async (id) => true;
 
 const modelOptions = [
   { label: "VF e34", value: "VF e34" },
@@ -43,19 +69,24 @@ const colorOptions = [
   { label: "Đỏ", value: "Đỏ" },
   { label: "Bạc", value: "Bạc" },
 ];
+const dealerOptions = [
+  { label: "Đại lý Hà Nội", value: "Đại lý Hà Nội" },
+  { label: "Đại lý Hồ Chí Minh", value: "Đại lý Hồ Chí Minh" },
+  { label: "Đại lý Đà Nẵng", value: "Đại lý Đà Nẵng" },
+];
 
-export default function ManageCategory() {
-  const [categories, setCategories] = useState([]);
+export default function ManageInventory() {
+  const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
 
-  // Load categories
+  // Load inventory
   useEffect(() => {
     setLoading(true);
-    fetchCategories()
-      .then(setCategories)
+    fetchInventory()
+      .then(setInventory)
       .finally(() => setLoading(false));
   }, []);
 
@@ -70,20 +101,20 @@ export default function ManageCategory() {
     }
   };
 
-  // Add or update category
+  // Add or update inventory
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
       if (editing) {
-        const updated = await updateCategory(editing.id, values);
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === editing.id ? updated : cat))
+        const updated = await updateInventory(editing.id, values);
+        setInventory((prev) =>
+          prev.map((item) => (item.id === editing.id ? updated : item))
         );
         notification.success({ message: "Cập nhật thành công!" });
       } else {
-        const added = await addCategory(values);
-        setCategories((prev) => [...prev, added]);
+        const added = await addInventory(values);
+        setInventory((prev) => [...prev, added]);
         notification.success({ message: "Thêm mới thành công!" });
       }
       setModalOpen(false);
@@ -95,11 +126,11 @@ export default function ManageCategory() {
     }
   };
 
-  // Remove category
+  // Remove inventory
   const handleRemove = async (id) => {
     setLoading(true);
-    await removeCategory(id);
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    await removeInventory(id);
+    setInventory((prev) => prev.filter((item) => item.id !== id));
     notification.success({ message: "Xóa thành công!" });
     setLoading(false);
   };
@@ -109,6 +140,8 @@ export default function ManageCategory() {
     { title: "Mẫu xe", dataIndex: "model", key: "model" },
     { title: "Phiên bản", dataIndex: "version", key: "version" },
     { title: "Màu sắc", dataIndex: "color", key: "color" },
+    { title: "Số lượng", dataIndex: "quantity", key: "quantity" },
+    { title: "Đại lý", dataIndex: "dealer", key: "dealer" },
     {
       title: "Thao tác",
       key: "action",
@@ -144,7 +177,7 @@ export default function ManageCategory() {
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-emerald-700">
-            Quản lý danh mục xe điện (mẫu, phiên bản, màu sắc)
+            Quản lý tồn kho tổng & điều phối xe cho đại lý
           </h2>
           <Button
             type="primary"
@@ -157,14 +190,14 @@ export default function ManageCategory() {
         </div>
         <Table
           columns={columns}
-          dataSource={categories}
+          dataSource={inventory}
           rowKey="id"
           loading={loading}
           pagination={false}
         />
       </Card>
       <Modal
-        title={editing ? "Cập nhật danh mục" : "Thêm mới danh mục"}
+        title={editing ? "Cập nhật tồn kho" : "Thêm mới tồn kho"}
         open={modalOpen}
         onOk={handleOk}
         onCancel={() => setModalOpen(false)}
@@ -192,6 +225,20 @@ export default function ManageCategory() {
             rules={[{ required: true, message: "Vui lòng chọn màu sắc!" }]}
           >
             <Select options={colorOptions} placeholder="Chọn màu sắc" />
+          </Form.Item>
+          <Form.Item
+            label="Số lượng"
+            name="quantity"
+            rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
+          >
+            <Input type="number" min={0} />
+          </Form.Item>
+          <Form.Item
+            label="Đại lý"
+            name="dealer"
+            rules={[{ required: true, message: "Vui lòng chọn đại lý!" }]}
+          >
+            <Select options={dealerOptions} placeholder="Chọn đại lý" />
           </Form.Item>
         </Form>
       </Modal>

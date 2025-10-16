@@ -91,6 +91,12 @@ export default function NavbarEVM() {
     if (e.key === "catalog") {
       navigate("/homeEVM/manage-category");
     }
+    if (e.key === "inventory") {
+      navigate("/homeEVM/manage-inventory");
+    }
+    if (e.key === "pricing") {
+      navigate("/homeEVM/manage-price");
+    }
     // Add more navigation logic for other keys if needed
   };
 

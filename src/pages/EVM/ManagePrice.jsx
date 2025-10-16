@@ -4,6 +4,7 @@ import {
   Button,
   Modal,
   Form,
+  InputNumber,
   Input,
   Space,
   Popconfirm,
@@ -13,102 +14,107 @@ import {
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
-// Dummy API functions (replace with your real API)
-const fetchCategories = async () => [
-  { id: 1, model: "VF e34", version: "Premium", color: "Trắng" },
-  { id: 2, model: "VF 8", version: "Eco", color: "Đen" },
-  { id: 3, model: "VF 9", version: "Plus", color: "Xanh" },
+// 🧩 Dummy API (replace later with real API calls)
+const fetchPrices = async () => [
+  {
+    id: 1,
+    dealer: "Đại lý Hà Nội",
+    model: "VF 8",
+    wholesalePrice: 900000000,
+    discount: 5,
+    promotion: "Giảm 10 triệu tháng 10",
+  },
+  {
+    id: 2,
+    dealer: "Đại lý TP.HCM",
+    model: "VF e34",
+    wholesalePrice: 700000000,
+    discount: 3,
+    promotion: "Tặng bảo hiểm 1 năm",
+  },
 ];
-const addCategory = async (data) => ({
-  ...data,
-  id: Math.floor(Math.random() * 1000),
-});
-const updateCategory = async (id, data) => ({ id, ...data });
-const removeCategory = async (id) => true;
 
+const addPrice = async (data) => ({
+  ...data,
+  id: Math.floor(Math.random() * 10000),
+});
+const updatePrice = async (id, data) => ({ id, ...data });
+const removePrice = async (id) => true;
+
+const dealerOptions = [
+  { label: "Đại lý Hà Nội", value: "Đại lý Hà Nội" },
+  { label: "Đại lý TP.HCM", value: "Đại lý TP.HCM" },
+  { label: "Đại lý Đà Nẵng", value: "Đại lý Đà Nẵng" },
+];
 const modelOptions = [
   { label: "VF e34", value: "VF e34" },
   { label: "VF 8", value: "VF 8" },
   { label: "VF 9", value: "VF 9" },
 ];
-const versionOptions = [
-  { label: "Eco", value: "Eco" },
-  { label: "Plus", value: "Plus" },
-  { label: "Premium", value: "Premium" },
-];
-const colorOptions = [
-  { label: "Trắng", value: "Trắng" },
-  { label: "Đen", value: "Đen" },
-  { label: "Xanh", value: "Xanh" },
-  { label: "Đỏ", value: "Đỏ" },
-  { label: "Bạc", value: "Bạc" },
-];
 
-export default function ManageCategory() {
-  const [categories, setCategories] = useState([]);
+export default function ManagePrice() {
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
 
-  // Load categories
   useEffect(() => {
     setLoading(true);
-    fetchCategories()
-      .then(setCategories)
+    fetchPrices()
+      .then(setData)
       .finally(() => setLoading(false));
   }, []);
 
-  // Open modal for add/update
   const openModal = (record = null) => {
     setEditing(record);
     setModalOpen(true);
-    if (record) {
-      form.setFieldsValue(record);
-    } else {
-      form.resetFields();
-    }
+    if (record) form.setFieldsValue(record);
+    else form.resetFields();
   };
 
-  // Add or update category
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
       if (editing) {
-        const updated = await updateCategory(editing.id, values);
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === editing.id ? updated : cat))
+        const updated = await updatePrice(editing.id, values);
+        setData((prev) =>
+          prev.map((item) => (item.id === editing.id ? updated : item))
         );
         notification.success({ message: "Cập nhật thành công!" });
       } else {
-        const added = await addCategory(values);
-        setCategories((prev) => [...prev, added]);
+        const added = await addPrice(values);
+        setData((prev) => [...prev, added]);
         notification.success({ message: "Thêm mới thành công!" });
       }
       setModalOpen(false);
       setEditing(null);
-    } catch (err) {
-      // Validation error
     } finally {
       setLoading(false);
     }
   };
 
-  // Remove category
   const handleRemove = async (id) => {
     setLoading(true);
-    await removeCategory(id);
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    await removePrice(id);
+    setData((prev) => prev.filter((item) => item.id !== id));
     notification.success({ message: "Xóa thành công!" });
     setLoading(false);
   };
 
   const columns = [
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
+    { title: "Đại lý", dataIndex: "dealer", key: "dealer" },
     { title: "Mẫu xe", dataIndex: "model", key: "model" },
-    { title: "Phiên bản", dataIndex: "version", key: "version" },
-    { title: "Màu sắc", dataIndex: "color", key: "color" },
+    {
+      title: "Giá sỉ (VNĐ)",
+      dataIndex: "wholesalePrice",
+      key: "wholesalePrice",
+      render: (value) => value.toLocaleString("vi-VN"),
+    },
+    { title: "Chiết khấu (%)", dataIndex: "discount", key: "discount" },
+    { title: "Khuyến mãi", dataIndex: "promotion", key: "promotion" },
     {
       title: "Thao tác",
       key: "action",
@@ -137,14 +143,14 @@ export default function ManageCategory() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 py-8 px-0 flex items-center justify-center">
+    <div className="min-h-screen w-full bg-gray-50 py-8 flex items-center justify-center">
       <Card
-        className="w-full h-full max-w-7xl mx-auto shadow"
+        className="w-full max-w-7xl mx-auto shadow"
         style={{ minHeight: "80vh", width: "100%" }}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-emerald-700">
-            Quản lý danh mục xe điện (mẫu, phiên bản, màu sắc)
+            Quản lý giá sỉ, chiết khấu, khuyến mãi theo đại lý
           </h2>
           <Button
             type="primary"
@@ -155,16 +161,20 @@ export default function ManageCategory() {
             Thêm mới
           </Button>
         </div>
+
         <Table
           columns={columns}
-          dataSource={categories}
+          dataSource={data}
           rowKey="id"
           loading={loading}
-          pagination={false}
+          pagination={{ pageSize: 6 }}
         />
       </Card>
+
       <Modal
-        title={editing ? "Cập nhật danh mục" : "Thêm mới danh mục"}
+        title={
+          editing ? "Cập nhật thông tin giá" : "Thêm mới giá sỉ / khuyến mãi"
+        }
         open={modalOpen}
         onOk={handleOk}
         onCancel={() => setModalOpen(false)}
@@ -173,25 +183,48 @@ export default function ManageCategory() {
       >
         <Form form={form} layout="vertical">
           <Form.Item
+            label="Đại lý"
+            name="dealer"
+            rules={[{ required: true, message: "Vui lòng chọn đại lý!" }]}
+          >
+            <Select options={dealerOptions} placeholder="Chọn đại lý" />
+          </Form.Item>
+
+          <Form.Item
             label="Mẫu xe"
             name="model"
             rules={[{ required: true, message: "Vui lòng chọn mẫu xe!" }]}
           >
             <Select options={modelOptions} placeholder="Chọn mẫu xe" />
           </Form.Item>
+
           <Form.Item
-            label="Phiên bản"
-            name="version"
-            rules={[{ required: true, message: "Vui lòng chọn phiên bản!" }]}
+            label="Giá sỉ (VNĐ)"
+            name="wholesalePrice"
+            rules={[{ required: true, message: "Vui lòng nhập giá sỉ!" }]}
           >
-            <Select options={versionOptions} placeholder="Chọn phiên bản" />
+            <InputNumber
+              min={0}
+              style={{ width: "100%" }}
+              formatter={(value) =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+              }
+              parser={(value) => value.replace(/,/g, "")}
+              placeholder="Nhập giá sỉ"
+            />
           </Form.Item>
-          <Form.Item
-            label="Màu sắc"
-            name="color"
-            rules={[{ required: true, message: "Vui lòng chọn màu sắc!" }]}
-          >
-            <Select options={colorOptions} placeholder="Chọn màu sắc" />
+
+          <Form.Item label="Chiết khấu (%)" name="discount">
+            <InputNumber
+              min={0}
+              max={100}
+              style={{ width: "100%" }}
+              placeholder="%"
+            />
+          </Form.Item>
+
+          <Form.Item label="Khuyến mãi" name="promotion">
+            <Input placeholder="Nhập mô tả khuyến mãi (nếu có)" />
           </Form.Item>
         </Form>
       </Modal>
