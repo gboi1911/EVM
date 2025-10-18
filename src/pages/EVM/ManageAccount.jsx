@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -7,8 +7,12 @@ import {
   Checkbox,
   Card,
   notification,
+  Table,
+  Space,
+  Tag,
 } from "antd";
-import { createAccount } from "../../api/authen";
+import { createAccount, getAllAccounts } from "../../api/authen";
+import { ReloadOutlined } from "@ant-design/icons";
 
 const roleOptions = [
   { label: "Đại lý", value: "DEALER_MANAGER" },
@@ -17,7 +21,31 @@ const roleOptions = [
 ];
 
 export default function ManageAccount() {
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [tableLoading, setTableLoading] = useState(false);
+
+  // Load accounts from API
+  const loadAccounts = async () => {
+    setTableLoading(true);
+    try {
+      const data = await getAllAccounts(0, 10);
+      setAccounts(data.carInfoGetDtos || []);
+    } catch (err) {
+      notification.error({
+        message: "Tải danh sách tài khoản thất bại!",
+        description: "Không thể lấy danh sách người dùng, vui lòng thử lại.",
+        placement: "topRight",
+      });
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAccounts();
+  }, []);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -28,6 +56,8 @@ export default function ManageAccount() {
         description: `Tài khoản ${values.username} đã được tạo.`,
         placement: "topRight",
       });
+      form.resetFields();
+      loadAccounts(); // refresh list
     } catch (error) {
       notification.error({
         message: "Tạo tài khoản thất bại!",
@@ -39,9 +69,51 @@ export default function ManageAccount() {
     }
   };
 
+  const columns = [
+    { title: "Tên đăng nhập", dataIndex: "username", key: "username" },
+    { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
+    { title: "Email", dataIndex: "email", key: "email" },
+    { title: "Số điện thoại", dataIndex: "phone", key: "phone" },
+    {
+      title: "Vai trò",
+      dataIndex: "role",
+      key: "role",
+      filters: [
+        { text: "Đại lý (Dealer Manager)", value: "DEALER_MANAGER" },
+        { text: "Nhân viên đại lý (Dealer Staff)", value: "DEALER_STAFF" },
+        { text: "Nhân viên công ty (EVM Staff)", value: "EVM_STAFF" },
+      ],
+      onFilter: (value, record) => record.role === value,
+      render: (role) => {
+        const colorMap = {
+          DEALER_MANAGER: "green",
+          DEALER_STAFF: "blue",
+          EVM_STAFF: "volcano",
+        };
+        const textMap = {
+          DEALER_MANAGER: "Đại lý",
+          DEALER_STAFF: "Nhân viên đại lý",
+          EVM_STAFF: "Nhân viên công ty",
+        };
+        return <Tag color={colorMap[role]}>{textMap[role]}</Tag>;
+      },
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (active) =>
+        active ? (
+          <Tag color="success">Hoạt động</Tag>
+        ) : (
+          <Tag color="error">Vô hiệu</Tag>
+        ),
+    },
+  ];
+
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-lg shadow-lg">
+    <div className="min-h-screen bg-gray-50 flex flex-col p-8">
+      <Card className="flex-1 w-full shadow-md border border-gray-200">
         <h2 className="text-2xl font-bold text-emerald-700 mb-6 text-center">
           Tạo tài khoản người dùng
         </h2>
@@ -99,11 +171,7 @@ export default function ManageAccount() {
           >
             <Select options={roleOptions} />
           </Form.Item>
-          <Form.Item
-            name="isActive"
-            valuePropName="checked"
-            label="Kích hoạt tài khoản"
-          >
+          <Form.Item name="isActive" valuePropName="checked" label="Trạng thái">
             <Checkbox>Hoạt động</Checkbox>
           </Form.Item>
           <Form.Item>
@@ -117,6 +185,33 @@ export default function ManageAccount() {
             </Button>
           </Form.Item>
         </Form>
+      </Card>
+
+      {/* ACCOUNTS TABLE */}
+      <Card
+        className="w-full max-w-6xl mx-auto shadow"
+        title={
+          <div className="flex justify-between items-center">
+            <span className="text-emerald-700 font-semibold">
+              Danh sách tài khoản
+            </span>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadAccounts}
+              className="text-emerald-700 border-emerald-700"
+            >
+              Tải lại
+            </Button>
+          </div>
+        }
+      >
+        <Table
+          columns={columns}
+          dataSource={accounts}
+          rowKey="username"
+          loading={tableLoading}
+          pagination={false}
+        />
       </Card>
     </div>
   );

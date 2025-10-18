@@ -37,3 +37,25 @@ export const createAccount = async (accountData) => {
   }
   return await response.json();
 };
+
+export const getAllAccounts = async (pageNo = 0, pageSize = 10) => {
+  const token = localStorage.getItem("access_token");
+
+  const response = await fetch(
+    `http://localhost:8000/evdealer/api/v1/auth/all/profile?pageNo=${pageNo}&pageSize=${pageSize}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch accounts: ${errorText}`);
+  }
+
+  return await response.json();
+};
