@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Tag,
   Card,
@@ -12,6 +12,7 @@ import {
   Slider,
   Space,
   Spin,
+  Carousel,
   message,
 } from "antd";
 import {
@@ -21,6 +22,8 @@ import {
   CarOutlined,
   BgColorsOutlined,
   SearchOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -29,44 +32,36 @@ const { Option } = Select;
 
 export default function CarList() {
   const [cars, setCars] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCars, setSelectedCars] = useState([]);
   const [compareModal, setCompareModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [priceRange, setPriceRange] = useState([0, 2000000000]);
+  const [priceRange, setPriceRange] = useState([0, 100000000]);
   const [sortOption, setSortOption] = useState(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [detailCar, setDetailCar] = useState(null);
   const [fetchingDetail, setFetchingDetail] = useState(false);
 
   const navigate = useNavigate();
+  const carouselRef = useRef(null);
 
   // 🟢 Fetch danh sách xe
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const res = await axios.get("/api/v1/car/all?pageNo=0&pageSize=50");
+        const res = await axios.get(
+          "http://localhost:8000/evdealer/api/v1/car/all?pageNo=0&pageSize=50"
+        );
+        console.log("CAR API RESPONSE:", res.data);
         setCars(res.data.carInfoGetDtos || []);
       } catch (err) {
+        console.error("FETCH ERROR:", err);
         message.error("Không thể tải danh sách xe");
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchCategories = async () => {
-      try {
-        const res = await axios.get("/api/v1/category/all");
-        setCategories(res.data.carInfoGetDtos || []);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
     fetchCars();
-    fetchCategories();
   }, []);
 
   const handleSelectCar = (id) => {
@@ -79,7 +74,7 @@ export default function CarList() {
 
   const handleCompare = () => {
     if (selectedCars.length === 2) {
-      navigate(`/evm/compare?ids=${selectedCars.join(",")}`);
+      navigate(`/vehicles/compare?ids=${selectedCars.join(",")}`);
     } else {
       setCompareModal(true);
     }
@@ -89,9 +84,13 @@ export default function CarList() {
   const handleViewDetail = async (carId) => {
     try {
       setFetchingDetail(true);
-      const res = await axios.get(`/api/v1/car/${carId}/detail`);
+      const res = await axios.get(
+        `http://localhost:8000/evdealer/api/v1/car/${carId}/detail`
+      );
+      console.log("DETAIL API RESPONSE:", res.data);
       setDetailCar(res.data);
     } catch (err) {
+      console.error("DETAIL FETCH ERROR:", err);
       message.error("Không thể tải chi tiết xe");
     } finally {
       setFetchingDetail(false);
@@ -125,12 +124,30 @@ export default function CarList() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2 style={{ fontSize: 24, fontWeight: 700, color: "#059669", textAlign: "center", marginBottom: 24 }}>
+      <h2
+        style={{
+          fontSize: 24,
+          fontWeight: 700,
+          color: "#059669",
+          textAlign: "center",
+          marginBottom: 24,
+        }}
+      >
         Danh mục xe điện
       </h2>
 
       {/* Bộ lọc */}
-      <Space direction="vertical" size="middle" style={{ display: "flex", marginBottom: 24, background: "#f9fafb", padding: 16, borderRadius: 8 }}>
+      <Space
+        direction="vertical"
+        size="middle"
+        style={{
+          display: "flex",
+          marginBottom: 24,
+          background: "#f9fafb",
+          padding: 16,
+          borderRadius: 8,
+        }}
+      >
         <Input
           placeholder="Tìm theo tên xe..."
           prefix={<SearchOutlined />}
@@ -158,8 +175,8 @@ export default function CarList() {
             <Slider
               range
               min={0}
-              max={2000000000}
-              step={50000000}
+              max={100000000}
+              step={1000000}
               value={priceRange}
               tooltip={{
                 formatter: (v) => v.toLocaleString() + " ₫",
@@ -245,15 +262,7 @@ export default function CarList() {
         </Button>
       </div>
 
-      <Modal
-        open={compareModal}
-        onCancel={() => setCompareModal(false)}
-        footer={null}
-        title="Chọn đúng 2 xe để so sánh"
-      >
-        <p>Vui lòng chọn đúng 2 xe để thực hiện so sánh.</p>
-      </Modal>
-
+      {/* Modal Chi tiết xe */}
       <Modal
         open={!!detailCar}
         onCancel={() => setDetailCar(null)}
@@ -264,13 +273,63 @@ export default function CarList() {
           <Spin />
         ) : (
           detailCar && (
-            <div>
-              <Image
-                src={detailCar.carImages?.[0]?.fileUrl}
-                height={200}
-                style={{ borderRadius: 8, marginBottom: 16 }}
-                preview={false}
+            <div style={{ position: "relative" }}>
+              <Carousel
+                ref={carouselRef}
+                autoplay
+                dots
+                style={{ marginBottom: 16 }}
+              >
+                {detailCar.carImages?.map((img, index) => (
+                  <div key={index}>
+                    <Image
+                      src={img.fileUrl}
+                      alt={`${detailCar.carName} - ${index}`}
+                      height={250}
+                      width="100%"
+                      style={{ objectFit: "cover", borderRadius: 8 }}
+                      preview={false}
+                    />
+                  </div>
+                ))}
+              </Carousel>
+
+              {/* Mũi tên điều hướng */}
+              <Button
+                type="text"
+                icon={<LeftOutlined />}
+                onClick={() => carouselRef.current.prev()}
+                style={{
+                  position: "absolute",
+                  top: "45%",
+                  left: 10,
+                  zIndex: 2,
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               />
+              <Button
+                type="text"
+                icon={<RightOutlined />}
+                onClick={() => carouselRef.current.next()}
+                style={{
+                  position: "absolute",
+                  top: "45%",
+                  right: 10,
+                  zIndex: 2,
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              />
+
               <p>
                 <ThunderboltOutlined /> Công suất:{" "}
                 {detailCar.performanceDetailGetDto?.motor?.powerKw} kW
