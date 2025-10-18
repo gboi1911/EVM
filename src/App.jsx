@@ -30,6 +30,7 @@ const FeedbackManagement = React.lazy(() => import("./pages/customers/FeedbackMa
 // Báo cáo
 const SalesReport = React.lazy(() => import("./pages/reports/SalesReport"));
 const DebtReport = React.lazy(() => import("./pages/reports/DebtReport"));
+const ManageCategory = React.lazy(() => import("./pages/EVM/ManageCategory"));
 
 function App() {
   return (
@@ -42,8 +43,7 @@ function App() {
 
           {/* Protected routes with layout */}
           <Route path="/" element={<MainLayout />}>
-            {/* Alias cho logo hiện tại (/home) */}
-            <Route path="home" element={<Navigate to="/homeDealer" replace />} />
+          
             <Route path="homeDealer" element={<Home />} />
             <Route path="homeEVM" element={<HomeEVM />} />
             <Route path="manage-account" element={<ManageAccount />} />
@@ -74,6 +74,10 @@ function App() {
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/homeDealer" replace />} />
+            <Route path="homeEVM" element={<HomeEVM />}>
+              <Route path="manage-account" element={<ManageAccount />} />
+              <Route path="manage-category" element={<ManageCategory />} />
+            </Route>
           </Route>
         </Routes>
       </Suspense>
