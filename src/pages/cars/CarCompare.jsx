@@ -35,7 +35,9 @@ export default function CarCompare() {
 
   if (loading)
     return (
-      <div style={{ textAlign: "center", padding: 60 }}>
+      <div
+        style={{ textAlign: "center", padding: 60, backgroundColor: "#fff" }}
+      >
         <Spin tip="Đang tải dữ liệu so sánh..." />
       </div>
     );
@@ -51,15 +53,33 @@ export default function CarCompare() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ textAlign: "center", marginBottom: 24 }}>So sánh xe điện</h2>
+    <div style={{ padding: 24, backgroundColor: "#fff" }}>
+      <h2
+        style={{
+          fontWeight: 700,
+          fontSize: 25,
+          color: "#059669",
+          textAlign: "center",
+          marginBottom: 24,
+        }}
+      >
+        So sánh xe điện
+      </h2>
       <Row gutter={32}>
         {cars.map((car, index) => (
           <Col span={12} key={car.id}>
             <Card
               title={car.carName}
               bordered
-              style={{ borderRadius: 12, overflow: "hidden" }}
+              style={{
+                borderRadius: 12,
+                overflow: "hidden",
+                border: "1px solid #059669",
+              }}
+              headStyle={{
+                backgroundColor: "#059669", // <-- Thêm dòng này
+                color: "#fff", // <-- Thêm dòng này để chữ màu trắng
+              }}
             >
               <div style={{ position: "relative", marginBottom: 16 }}>
                 <Carousel
@@ -123,8 +143,11 @@ export default function CarCompare() {
 
               <p>
                 <b>Giá bán:</b>{" "}
-                {car.price ? car.price.toLocaleString() + " ₫" : "Đang cập nhật"}
+                {car.price
+                  ? Number(car.price).toLocaleString() + " ₫"
+                  : "Đang cập nhật"}
               </p>
+
               <p>
                 <b>Loại dẫn động:</b> {car.driveType || "N/A"}
               </p>
