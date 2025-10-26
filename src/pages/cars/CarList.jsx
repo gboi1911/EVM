@@ -117,16 +117,16 @@ export default function CarList() {
 
   if (loading)
     return (
-      <div style={{ textAlign: "center", padding: 80 }}>
+      <div style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}>
         <Spin tip="Đang tải danh sách xe..." />
       </div>
     );
 
-  return (
-    <div style={{ padding: 24 }}>
+return (
+  <div style={{ padding: 24, backgroundColor: "#fff" }}>
       <h2
         style={{
-          fontSize: 24,
+          fontSize: 30,
           fontWeight: 700,
           color: "#059669",
           textAlign: "center",
@@ -220,7 +220,7 @@ export default function CarList() {
                     />
                   }
                 >
-                  <h3>{car.carName}</h3>
+                  <h3 style={{ fontSize: "15px" }}>{car.carName}</h3>
                   <p style={{ color: "#059669", fontWeight: 600 }}>
                     {car.price.toLocaleString()} ₫
                   </p>
