@@ -49,7 +49,11 @@ export default function ManageCar() {
     pageSize: 10,
     total: 0,
   });
-  const [fileList, setFileList] = useState([]); // for upload in create/edit
+
+  // upload modal state (for adding images to an existing car row)
+  const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [uploadTargetCar, setUploadTargetCar] = useState(null);
+  const [uploadFileList, setUploadFileList] = useState([]);
 
   const loadCars = async (page = 1, pageSize = 10) => {
     setLoading(true);
@@ -126,16 +130,6 @@ export default function ManageCar() {
         topSpeedMph: car.performanceDetailGetDto?.topSpeedMph,
         towingLbs: car.performanceDetailGetDto?.towingLbs,
       });
-      // prepare fileList from existing images (read-only)
-      setFileList(
-        (car.carImages || []).map((img, idx) => ({
-          uid: `existing-${idx}`,
-          name: img.fileName || `img-${idx}`,
-          status: "done",
-          url: img.fileUrl || img.filePath,
-          originFileObj: null,
-        }))
-      );
       setModalType("edit");
       setModalVisible(true);
     } catch (error) {
@@ -148,49 +142,12 @@ export default function ManageCar() {
 
   const handleCreate = () => {
     form.resetFields();
-    setFileList([]);
     setSelectedCar(null);
     setModalType("create");
     setModalVisible(true);
   };
 
-  const uploadBefore = (file) => {
-    // add to controlled fileList and prevent auto upload
-    setFileList((prev) => [
-      ...prev,
-      {
-        uid: file.uid,
-        name: file.name,
-        status: "uploading",
-        originFileObj: file,
-      },
-    ]);
-    return false;
-  };
-
-  const handleRemoveFile = (file) => {
-    setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
-  };
-
-  const uploadFilesToCar = async (carId) => {
-    // post each file (originFileObj) using postImageForCar
-    for (const f of fileList) {
-      // skip existing images (no originFileObj)
-      if (!f.originFileObj) continue;
-      const formData = new FormData();
-      formData.append("file", f.originFileObj);
-      try {
-        await postImageForCar(carId, formData);
-      } catch (err) {
-        console.error("Upload image failed", err);
-        notification.error({
-          message: "Lỗi tải ảnh",
-          description: `Không thể tải ảnh ${f.name}`,
-        });
-      }
-    }
-  };
-
+  // NOTE: create no longer handles images. images are added via row "Ảnh" action.
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -226,11 +183,7 @@ export default function ManageCar() {
             towingLbs: Number(values.towingLbs || 0),
           },
         };
-        const created = await createCar(createData);
-        // upload images if any
-        if (fileList.length > 0) {
-          await uploadFilesToCar(created.id || created.carId || created);
-        }
+        await createCar(createData);
         notification.success({ message: "Tạo mới thành công!" });
       } else if (modalType === "edit") {
         const updateData = {
@@ -241,20 +194,73 @@ export default function ManageCar() {
           year: Number(values.year || 0),
         };
         await updateCar(selectedCar.id, updateData);
-        // upload new images if any
-        if (fileList.some((f) => f.originFileObj)) {
-          await uploadFilesToCar(selectedCar.id);
-        }
         notification.success({ message: "Cập nhật thành công!" });
       }
       setModalVisible(false);
-      loadCars(pagination.current, pagination.pageSize);
+      form.resetFields();
+      // refetch list after create/update
+      await loadCars(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error(error);
       notification.error({
         message: "Lỗi",
         description: "Có lỗi xảy ra khi lưu thông tin.",
       });
+    }
+  };
+
+  // Upload images for an existing car (triggered from table row)
+  const openUploadModal = (record) => {
+    setUploadTargetCar(record);
+    setUploadFileList([]);
+    setUploadModalVisible(true);
+  };
+
+  const uploadBefore = (file) => {
+    setUploadFileList((prev) => [
+      ...prev,
+      {
+        uid: file.uid,
+        name: file.name,
+        status: "ready",
+        originFileObj: file,
+      },
+    ]);
+    return false; // prevent auto upload
+  };
+
+  const handleRemoveUploadFile = (file) => {
+    setUploadFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadTargetCar) return;
+    if (!uploadFileList.length) {
+      notification.warn({ message: "Vui lòng chọn tệp để tải lên." });
+      return;
+    }
+    setLoading(true);
+    try {
+      for (const f of uploadFileList) {
+        if (!f.originFileObj) continue;
+        const fd = new FormData();
+        fd.append("file", f.originFileObj);
+        await postImageForCar(uploadTargetCar.carId || uploadTargetCar.id, fd);
+      }
+      notification.success({ message: "Tải ảnh thành công" });
+      setUploadModalVisible(false);
+      setUploadTargetCar(null);
+      setUploadFileList([]);
+      // refetch list to show new images in row
+      await loadCars(pagination.current, pagination.pageSize);
+    } catch (err) {
+      console.error(err);
+      notification.error({
+        message: "Tải ảnh thất bại",
+        description: err?.message || "",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -320,6 +326,12 @@ export default function ManageCar() {
           >
             Sửa
           </Button>
+          <Button
+            icon={<UploadOutlined />}
+            onClick={() => openUploadModal(record)}
+          >
+            Ảnh
+          </Button>
         </Space>
       ),
     },
@@ -382,17 +394,9 @@ export default function ManageCar() {
           <Form.Item name="extraCost" label="Phụ phí">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item label="Ảnh xe" name="images">
-            <Upload
-              beforeUpload={uploadBefore}
-              onRemove={handleRemoveFile}
-              fileList={fileList}
-              listType="picture"
-              multiple
-            >
-              <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
-            </Upload>
-          </Form.Item>
+
+          {/* Upload removed from create form per request.
+              Images are added later via the "Ảnh" action in the list. */}
         </TabPane>
 
         <TabPane tab="Kích thước" key="3">
@@ -498,7 +502,9 @@ export default function ManageCar() {
                     width: 40,
                     height: 24,
                     background:
-                      car.color.colorHexCode || car.colorHexCode || "#fff",
+                      car.color.colorHexCode ||
+                      car.color.colorHexCode ||
+                      "#fff",
                     border: "1px solid #ddd",
                   }}
                 />
@@ -637,6 +643,28 @@ export default function ManageCar() {
         width={900}
       >
         {modalType === "view" ? renderDetailView() : renderCreateForm()}
+      </Modal>
+
+      <Modal
+        title={
+          uploadTargetCar
+            ? `Tải ảnh cho: ${uploadTargetCar.carName || uploadTargetCar.carId}`
+            : "Tải ảnh"
+        }
+        open={uploadModalVisible}
+        onCancel={() => setUploadModalVisible(false)}
+        onOk={handleUploadSubmit}
+        okText="Tải lên"
+      >
+        <Upload
+          beforeUpload={uploadBefore}
+          onRemove={handleRemoveUploadFile}
+          fileList={uploadFileList}
+          listType="picture"
+          multiple
+        >
+          <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+        </Upload>
       </Modal>
     </div>
   );

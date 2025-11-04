@@ -49,7 +49,7 @@ export const getAllAccounts = async (pageNo = 0, pageSize = 10) => {
   const token = localStorage.getItem("access_token");
 
   const response = await fetch(
-    `http://localhost:8000/evdealer/api/v1/auth/all/profile?pageNo=${pageNo}&pageSize=${pageSize}`,
+    `http://localhost:8000/evdealer/api/v1/user/all?pageNo=${pageNo}&pageSize=${pageSize}`,
     {
       method: "GET",
       headers: {
@@ -132,6 +132,55 @@ export const changePassword = async (oldPassword, newPassword) => {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Password change failed: ${response.status} ${errorText}`);
+  }
+  return await response.json();
+};
+
+export const banAccount = async (userId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/user/${userId}/ban`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Account banning failed");
+  }
+  return await response.json();
+};
+
+export const unbanAccount = async (userId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/user/${userId}/unban`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Account unbanning failed");
+  }
+  return await response.json();
+};
+
+export const filterAccountsByRole = async (role, pageNo = 0, pageSize = 10) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/user/filter-by-role?role=${role}&pageNo=${pageNo}&pageSize=${pageSize}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to filter accounts: ${errorText}`);
   }
   return await response.json();
 };

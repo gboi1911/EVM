@@ -104,8 +104,8 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-6">
-      <Card>
+    <div className="p-6 bg-white min-h-screen">
+      <Card className="shadow-sm">
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={4}>Hồ sơ người dùng</Title>

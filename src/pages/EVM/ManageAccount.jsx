@@ -11,8 +11,17 @@ import {
   Space,
   Tag,
 } from "antd";
-import { createAccount, getAllAccounts } from "../../api/authen";
-import { ReloadOutlined } from "@ant-design/icons";
+import {
+  createAccount,
+  getAllAccounts,
+  banAccount,
+  unbanAccount,
+} from "../../api/authen";
+import {
+  ReloadOutlined,
+  LockOutlined,
+  UnlockOutlined,
+} from "@ant-design/icons";
 
 const roleOptions = [
   { label: "Đại lý", value: "DEALER_MANAGER" },
@@ -31,7 +40,7 @@ export default function ManageAccount() {
     setTableLoading(true);
     try {
       const data = await getAllAccounts(0, 10);
-      setAccounts(data.carInfoGetDtos || []);
+      setAccounts(data.userInfoGetDtos || []);
     } catch (err) {
       notification.error({
         message: "Tải danh sách tài khoản thất bại!",
@@ -66,6 +75,40 @@ export default function ManageAccount() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBanAccount = async (userId) => {
+    try {
+      await banAccount(userId);
+      notification.success({
+        message: "Vô hiệu hóa tài khoản thành công",
+        placement: "topRight",
+      });
+      loadAccounts(); // Refresh list
+    } catch (err) {
+      notification.error({
+        message: "Vô hiệu hóa tài khoản thất bại",
+        description: err.message,
+        placement: "topRight",
+      });
+    }
+  };
+
+  const handleUnbanAccount = async (userId) => {
+    try {
+      await unbanAccount(userId);
+      notification.success({
+        message: "Kích hoạt tài khoản thành công",
+        placement: "topRight",
+      });
+      loadAccounts(); // Refresh list
+    } catch (err) {
+      notification.error({
+        message: "Kích hoạt tài khoản thất bại",
+        description: err.message,
+        placement: "topRight",
+      });
     }
   };
 
@@ -108,6 +151,32 @@ export default function ManageAccount() {
         ) : (
           <Tag color="error">Vô hiệu</Tag>
         ),
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      render: (_, record) => (
+        <Space>
+          {record.isActive ? (
+            <Button
+              danger
+              icon={<LockOutlined />}
+              onClick={() => handleBanAccount(record.userId)}
+            >
+              Lock
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              icon={<UnlockOutlined />}
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => handleUnbanAccount(record.userId)}
+            >
+              Unlock
+            </Button>
+          )}
+        </Space>
+      ),
     },
   ];
 

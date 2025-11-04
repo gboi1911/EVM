@@ -12,6 +12,7 @@ import {
   FileTextOutlined,
   BarChartOutlined,
   RobotOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 import { getProfile } from "../api/authen";
 import logo from "../assets/logo.png";
@@ -33,6 +34,11 @@ const items = [
         key: "car",
         icon: <CarOutlined />,
         label: "Quản lý xe điện",
+      },
+      {
+        key: "motorbike",
+        icon: <DashboardOutlined />,
+        label: "Quản lý động cơ",
       },
       {
         key: "inventory",
@@ -138,6 +144,9 @@ export default function NavbarEVM() {
     }
     if (e.key === "car") {
       navigate("/homeEVM/manage-car");
+    }
+    if (e.key === "motorbike") {
+      navigate("/homeEVM/manage-motorbike");
     }
     if (e.key === "AIforecast") {
       navigate("/homeEVM/AIforecast");

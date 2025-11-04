@@ -19,6 +19,7 @@ const Profile = React.lazy(() => import("./pages/Profile"));
 const CarList = React.lazy(() => import("./pages/cars/CarList"));
 const CarCompare = React.lazy(() => import("./pages/cars/CarCompare"));
 const ManageCar = React.lazy(() => import("./pages/EVM/ManageCar"));
+const ManageMotorbike = React.lazy(() => import("./pages/EVM/ManageMotor"));
 
 // Trang quản lý bán hàng
 const QuotationPage = React.lazy(() => import("./pages/sales/QuotationPage"));
@@ -96,6 +97,7 @@ function App() {
               <Route path="manage-inventory" element={<ManageInventory />} />
               <Route path="manage-price" element={<ManagePrice />} />
               <Route path="manage-car" element={<ManageCar />} />
+              <Route path="manage-motorbike" element={<ManageMotorbike />} />
               <Route path="profile" element={<Profile />} />
             </Route>
           </Route>
