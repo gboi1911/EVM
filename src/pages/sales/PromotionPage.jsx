@@ -20,19 +20,41 @@ export default function PromotionPage() {
   const filtered = filter ? promoData.filter((p) => p.type === filter) : promoData;
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ fontWeight: 700, color: "#059669" }}>Quản lý khuyến mãi & chiết khấu</h2>
-      <Select
-        placeholder="Lọc theo loại"
-        allowClear
-        onChange={setFilter}
-        options={[
-          { value: "Chiết khấu", label: "Chiết khấu" },
-          { value: "Quà tặng", label: "Quà tặng" },
-        ]}
-        style={{ marginBottom: 16 }}
-      />
-      <Table columns={columns} dataSource={filtered} rowKey="id" />
+    // 1. Div bọc ngoài cùng
+    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+      {/* 2. Div khung chứa nội dung chính */}
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          background: "#fff",
+          borderRadius: 12,
+          padding: 24,
+        }}
+      >
+        {/* 3. Tiêu đề cập nhật */}
+        <h2
+          style={{
+            fontWeight: 700,
+            color: "#059669",
+            textAlign: "center",
+            marginBottom: 24,
+          }}
+        >
+          Quản lý khuyến mãi & chiết khấu
+        </h2>
+        <Select
+          placeholder="Lọc theo loại"
+          allowClear
+          onChange={setFilter}
+          options={[
+            { value: "Chiết khấu", label: "Chiết khấu" },
+            { value: "Quà tặng", label: "Quà tặng" },
+          ]}
+          style={{ marginBottom: 16, width: 200 }} // Thêm width để select đẹp hơn
+        />
+        <Table columns={columns} dataSource={filtered} rowKey="id" />
+      </div>
     </div>
   );
 }

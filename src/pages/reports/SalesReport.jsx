@@ -1,31 +1,85 @@
-import { Table, Statistic, Card } from "antd";
+// src/pages/reports/SalesReport.jsx
 
-const data = [
-  { id: 1, name: "Nguyễn Văn A", total: 12, revenue: 2500000000 },
-  { id: 2, name: "Trần Thị B", total: 8, revenue: 1800000000 },
-];
+import { Table, Statistic, Card, Spin, message } from "antd";
+import { useEffect, useState } from "react";
+// THAY ĐỔI 1: Sửa tên hàm import cho đúng
+import { getStaffRevenue } from "../../api/reports"; 
 
 export default function SalesReport() {
+  const [data, setData] = useState([]); // Khởi tạo là mảng rỗng []
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        setLoading(true);
+        const response = await getStaffRevenue(); // Gọi API
+
+        // THAY ĐỔI 2: Gán 'response.data' (mảng) thay vì 'response' (object)
+        setData(response.data); 
+
+      } catch (e) {
+        message.error("Không tải được báo cáo doanh thu");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, []); // Chạy 1 lần khi load trang
+
+  // Dòng này (trước đây là dòng 21) sẽ hoạt động vì 'data' là mảng
+  const total = data.reduce((total, currentItem) => total + currentItem.revenue, 0);
+
   const columns = [
-    { title: "Mã NV", dataIndex: "id" },
-    { title: "Tên nhân viên", dataIndex: "name" },
-    { title: "Số lượng xe bán", dataIndex: "total" },
+    { title: "Mã NV", dataIndex: "staffId" },
+    { title: "Tên nhân viên", dataIndex: "staffName" },
     {
-      title: "Doanh thu (VNĐ)",
+      title: "Doanh thu (₫)",
       dataIndex: "revenue",
-      render: (r) => r.toLocaleString("vi-VN"),
+      render: (v) => v.toLocaleString(),
+      sorter: (a, b) => a.revenue - b.revenue, // Thêm sắp xếp
     },
   ];
 
-  const totalRevenue = data.reduce((acc, cur) => acc + cur.revenue, 0);
-
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ fontWeight: 700, color: "#059669" }}>Báo cáo doanh số nhân viên</h2>
-      <Card style={{ marginBottom: 16 }}>
-        <Statistic title="Tổng doanh thu toàn hệ thống" value={totalRevenue} suffix="VNĐ" />
-      </Card>
-      <Table columns={columns} dataSource={data} rowKey="id" />
+    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          background: "#fff",
+          borderRadius: 12,
+          padding: 24,
+        }}
+      >
+        <h2
+          style={{
+            fontWeight: 700,
+            color: "#059669",
+            textAlign: "center",
+            marginBottom: 24,
+          }}
+        >
+          Báo cáo doanh thu (Theo nhân viên)
+        </h2>
+
+        {loading ? (
+          <Spin style={{ display: "block", margin: "auto" }} />
+        ) : (
+          <>
+            <Card style={{ marginBottom: 24 }}>
+              <Statistic
+                title="Tổng doanh thu"
+                value={total}
+                suffix="₫"
+                valueStyle={{ color: '#059669' }}
+              />
+            </Card>
+            <Table columns={columns} dataSource={data} rowKey="staffId" />
+          </>
+        )}
+      </div>
     </div>
   );
 }

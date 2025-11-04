@@ -23,16 +23,38 @@ export default function ContractPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ fontWeight: 700, color: "#059669" }}>Quản lý hợp đồng bán hàng</h2>
-      <Tabs
-        defaultActiveKey="1"
-        items={[
-          { key: "1", label: "Đang hiệu lực", children: <Table columns={columns} dataSource={contracts.filter(c => c.status === "Đang hiệu lực")} /> },
-          { key: "2", label: "Hết hạn", children: <Table columns={columns} dataSource={contracts.filter(c => c.status === "Hết hạn")} /> },
-          { key: "3", label: "Đã thanh lý", children: <Table columns={columns} dataSource={contracts.filter(c => c.status === "Đã thanh lý")} /> },
-        ]}
-      />
+    // 1. Div bọc ngoài cùng
+    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+      {/* 2. Div khung chứa nội dung chính */}
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          background: "#fff",
+          borderRadius: 12,
+          padding: 24,
+        }}
+      >
+        {/* 3. Tiêu đề cập nhật */}
+        <h2
+          style={{
+            fontWeight: 700,
+            color: "#059669",
+            textAlign: "center",
+            marginBottom: 24,
+          }}
+        >
+          Quản lý hợp đồng bán hàng
+        </h2>
+        <Tabs
+          defaultActiveKey="1"
+          items={[
+            { key: "1", label: "Đang hiệu lực", children: <Table columns={columns} dataSource={contracts.filter(c => c.status === "Đang hiệu lực")} /> },
+            { key: "2", label: "Hết hạn", children: <Table columns={columns} dataSource={contracts.filter(c => c.status === "Hết hạn")} /> },
+            { key: "3", label: "Đã thanh lý", children: <Table columns={columns} dataSource={contracts.filter(c => c.status === "Đã thanh lý")} /> },
+          ]}
+        />
+      </div>
     </div>
   );
 }
