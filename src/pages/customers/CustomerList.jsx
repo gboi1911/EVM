@@ -18,10 +18,7 @@ export default function CustomerList() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      // Lấy 20 khách hàng ở trang 0
       const response = await listCustomers({ pageNo: 0, pageSize: 20 }); 
-
-      // CẬP NHẬT: Dữ liệu API nằm trong response.data.customerDetailGetDtos
       setCustomers(response.data.customerDetailGetDtos || []);
     } catch (e) {
       message.error("Lỗi tải danh sách khách hàng");
@@ -39,7 +36,6 @@ export default function CustomerList() {
   const handleCreateCustomer = async (values) => {
     try {
       setFormLoading(true);
-      // Gọi API tạo mới
       await createCustomer(values); 
       message.success("Tạo khách hàng thành công!");
       setIsModalOpen(false); // Đóng modal
@@ -52,17 +48,16 @@ export default function CustomerList() {
     }
   };
 
-  // CẬP NHẬT: Mở lại các cột Email và Address
   const columns = [
-    { title: "Mã KH", dataIndex: "id", width: 80, sorter: (a, b) => a.id - b.id },
+    { title: "Mã KH", dataIndex: "id", width: 100, sorter: (a, b) => a.id - b.id },
     {
       title: "Họ tên",
       dataIndex: "fullName",
       sorter: (a, b) => a.fullName.localeCompare(b.fullName),
     },
     { title: "Số điện thoại", dataIndex: "phone" },
-    { title: "Email", dataIndex: "email" }, // <-- Đã mở lại
-    { title: "Địa chỉ", dataIndex: "address" }, // <-- Đã mở lại
+    { title: "Email", dataIndex: "email" },
+    { title: "Địa chỉ", dataIndex: "address" },
     {
       title: "Thao tác",
       width: 120,
@@ -85,25 +80,30 @@ export default function CustomerList() {
           padding: 24,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2
-            style={{
-              fontWeight: 700,
-              color: "#059669",
-              margin: 0, // Bỏ margin
-            }}
-          >
-            Hồ sơ khách hàng
-          </h2>
-          {/* THÊM MỚI: Nút tạo khách hàng */}
-          {/* <Button 
+        {/* THAY ĐỔI: Xóa <div> bọc ngoài và thêm style vào <h2> */}
+        <h2
+          style={{
+               fontSize: 25,
+          fontWeight: 700,
+            color: "#059669",
+            textAlign: 'center', // Thêm thuộc tính này
+            marginBottom: 24,   // Thêm thuộc tính này
+          }}
+        >
+          Hồ sơ khách hàng
+        </h2>
+
+        {/* Nút "Tạo khách hàng mới" đã bị bạn comment. 
+            Nếu muốn dùng lại, hãy bỏ comment và đặt nó ở đây: */}
+        {/* <Button 
             type="primary" 
             icon={<PlusOutlined />} 
             onClick={() => setIsModalOpen(true)}
+            style={{ marginBottom: 24 }} // Thêm margin
           >
             Tạo khách hàng mới
           </Button> */}
-        </div>
+        
 
         {/* Dùng Spin để bao bọc Table */}
         <Spin spinning={loading}>
@@ -111,7 +111,7 @@ export default function CustomerList() {
         </Spin>
       </div>
 
-      {/* THÊM MỚI: Modal để tạo khách hàng */}
+      {/* Modal để tạo khách hàng (Giữ nguyên) */}
       <Modal
         title="Tạo khách hàng mới"
         open={isModalOpen}

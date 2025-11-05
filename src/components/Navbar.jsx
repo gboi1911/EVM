@@ -61,14 +61,14 @@ export default function Navbar() {
                 key: "orders",
                 label: <Link to="/sales/orders">Đơn hàng</Link>,
               },
-              {
-                key: "contracts",
-                label: <Link to="/sales/contracts">Hợp đồng</Link>,
-              },
-              {
-                key: "promotions",
-                label: <Link to="/sales/promotions">Khuyến mãi</Link>,
-              },
+              // {
+              //   key: "contracts",
+              //   label: <Link to="/sales/contracts">Hợp đồng</Link>,
+              // },
+              // {
+              //   key: "promotions",
+              //   label: <Link to="/sales/promotions">Khuyến mãi</Link>,
+              // },
               {
                 key: "booking",
                 label: <Link to="/sales/booking">Đặt xe từ hãng</Link>,
@@ -96,12 +96,12 @@ export default function Navbar() {
                 key: "test-drive",
                 label: <Link to="/customers/test-drive">Lịch hẹn lái thử</Link>,
               },
-              {
-                key: "feedback",
-                label: (
-                  <Link to="/customers/feedback">Phản hồi & khiếu nại</Link>
-                ),
-              },
+              // {
+              //   key: "feedback",
+              //   label: (
+              //     <Link to="/customers/feedback">Phản hồi & khiếu nại</Link>
+              //   ),
+              // },
             ],
           },
           {
@@ -134,4 +134,4 @@ export default function Navbar() {
       </Button>
     </Header>
   );
-}
+} 
