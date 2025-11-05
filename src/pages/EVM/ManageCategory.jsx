@@ -10,20 +10,18 @@ import {
   notification,
   Card,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-
-// Dummy API functions (replace with your real API)
-const fetchCategories = async () => [
-  { id: 1, type: "SUV" },
-  { id: 2, type: "Sedan" },
-  { id: 3, type: "Hatchback" },
-];
-const addCategory = async (data) => ({
-  ...data,
-  id: Math.floor(Math.random() * 1000),
-});
-const updateCategory = async (id, data) => ({ id, ...data });
-const removeCategory = async (id) => true;
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
+import {
+  fetchCategories,
+  addCategory,
+  updateCategory,
+  removeCategory,
+} from "../../api/category";
 
 export default function ManageCategory() {
   const [categories, setCategories] = useState([]);
@@ -32,15 +30,27 @@ export default function ManageCategory() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
 
-  // Load categories
-  useEffect(() => {
+  // ✅ Load categories from backend
+  const loadData = async () => {
     setLoading(true);
-    fetchCategories()
-      .then(setCategories)
-      .finally(() => setLoading(false));
+    try {
+      const response = await fetchCategories();
+      setCategories(response.carInfoGetDtos || []);
+    } catch (err) {
+      notification.error({
+        message: "Lỗi tải danh mục",
+        description: "Không thể tải dữ liệu từ máy chủ.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  // Open modal for add/update
+  // ✅ Open modal for Add / Edit
   const openModal = (record = null) => {
     setEditing(record);
     setModalOpen(true);
@@ -51,43 +61,54 @@ export default function ManageCategory() {
     }
   };
 
-  // Add or update category
+  // ✅ Add / Update category
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
+
       if (editing) {
-        const updated = await updateCategory(editing.id, values);
-        setCategories((prev) =>
-          prev.map((cat) => (cat.id === editing.id ? updated : cat))
-        );
-        notification.success({ message: "Cập nhật thành công!" });
+        await updateCategory(editing.id, values);
+        notification.success({ message: "Cập nhật danh mục thành công!" });
       } else {
-        const added = await addCategory(values);
-        setCategories((prev) => [...prev, added]);
-        notification.success({ message: "Thêm mới thành công!" });
+        await addCategory(values);
+        notification.success({ message: "Thêm danh mục thành công!" });
       }
+
+      // ✅ Refresh list after action
+      await loadData();
+
       setModalOpen(false);
       setEditing(null);
+      form.resetFields();
     } catch (err) {
-      // Validation error
+      notification.error({
+        message: "Lỗi khi lưu danh mục",
+        description: "Vui lòng kiểm tra lại thông tin hoặc thử lại sau.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Remove category
+  // ✅ Remove category
   const handleRemove = async (id) => {
     setLoading(true);
-    await removeCategory(id);
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
-    notification.success({ message: "Xóa thành công!" });
-    setLoading(false);
+    try {
+      await removeCategory(id);
+      setCategories((prev) => prev.filter((cat) => cat.id !== id));
+      notification.success({ message: "Xóa danh mục thành công!" });
+    } catch {
+      notification.error({ message: "Xóa danh mục thất bại!" });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // ✅ Table columns
   const columns = [
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    { title: "Loại danh mục", dataIndex: "type", key: "type" },
+    { title: "Tên danh mục", dataIndex: "categoryName", key: "categoryName" },
     {
       title: "Thao tác",
       key: "action",
@@ -123,17 +144,27 @@ export default function ManageCategory() {
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-emerald-700">
-            Quản lý danh mục xe điện
+            Quản lý danh mục xe
           </h2>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => openModal()}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            Thêm mới
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadData}
+              className="text-emerald-700 border-emerald-700"
+            >
+              Tải lại
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => openModal()}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              Thêm mới
+            </Button>
+          </div>
         </div>
+
         <Table
           columns={columns}
           dataSource={categories}
@@ -142,6 +173,7 @@ export default function ManageCategory() {
           pagination={false}
         />
       </Card>
+
       <Modal
         title={editing ? "Cập nhật danh mục" : "Thêm mới danh mục"}
         open={modalOpen}
@@ -152,13 +184,11 @@ export default function ManageCategory() {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label="Loại danh mục"
-            name="type"
-            rules={[
-              { required: true, message: "Vui lòng nhập loại danh mục!" },
-            ]}
+            label="Tên danh mục"
+            name="categoryName"
+            rules={[{ required: true, message: "Vui lòng nhập tên danh mục!" }]}
           >
-            <Input />
+            <Input placeholder="Nhập tên danh mục (VD: Sedan, SUV...)" />
           </Form.Item>
         </Form>
       </Modal>
