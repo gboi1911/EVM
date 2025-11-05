@@ -16,8 +16,8 @@ const CarCompare = React.lazy(() => import("./pages/cars/CarCompare"));
 // Trang quản lý bán hàng
 const QuotationPage = React.lazy(() => import("./pages/sales/QuotationPage"));
 const OrderPage = React.lazy(() => import("./pages/sales/OrderPage"));
-const ContractPage = React.lazy(() => import("./pages/sales/ContractPage"));
-const PromotionPage = React.lazy(() => import("./pages/sales/PromotionPage"));
+// const ContractPage = React.lazy(() => import("./pages/sales/ContractPage"));
+// const PromotionPage = React.lazy(() => import("./pages/sales/PromotionPage"));
 const DeliveryTrackingPage = React.lazy(() => import("./pages/sales/DeliveryTrackingPage"));
 const PaymentPage = React.lazy(() => import("./pages/sales/PaymentPage"));
 const BookingPage = React.lazy(() => import("./pages/sales/BookingPage"));
@@ -57,8 +57,8 @@ function App() {
             {/* Quản lý bán hàng - khớp Navbar */}
             <Route path="sales/quotes" element={<QuotationPage />} />
             <Route path="sales/orders" element={<OrderPage />} />
-            <Route path="sales/contracts" element={<ContractPage />} />
-            <Route path="sales/promotions" element={<PromotionPage />} />
+            {/* <Route path="sales/contracts" element={<ContractPage />} />
+            <Route path="sales/promotions" element={<PromotionPage />} /> */}
             <Route path="sales/delivery" element={<DeliveryTrackingPage />} />
             <Route path="sales/payments" element={<PaymentPage />} />
 <Route path="sales/booking" element={<BookingPage />} />
