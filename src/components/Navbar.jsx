@@ -69,10 +69,10 @@ export default function Navbar() {
               //   key: "promotions",
               //   label: <Link to="/sales/promotions">Khuyến mãi</Link>,
               // },
-              {
-                key: "booking",
-                label: <Link to="/sales/booking">Đặt xe từ hãng</Link>,
-              },
+              // {
+              //   key: "booking",
+              //   label: <Link to="/sales/booking">Đặt xe từ hãng</Link>,
+              // },
               {
                 key: "delivery",
                 label: <Link to="/sales/delivery">Theo dõi giao xe</Link>,

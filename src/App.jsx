@@ -20,7 +20,7 @@ const OrderPage = React.lazy(() => import("./pages/sales/OrderPage"));
 // const PromotionPage = React.lazy(() => import("./pages/sales/PromotionPage"));
 const DeliveryTrackingPage = React.lazy(() => import("./pages/sales/DeliveryTrackingPage"));
 const PaymentPage = React.lazy(() => import("./pages/sales/PaymentPage"));
-const BookingPage = React.lazy(() => import("./pages/sales/BookingPage"));
+// const BookingPage = React.lazy(() => import("./pages/sales/BookingPage"));
 
 // Trang khách hàng
 const CustomerList = React.lazy(() => import("./pages/customers/CustomerList"));
@@ -61,7 +61,7 @@ function App() {
             <Route path="sales/promotions" element={<PromotionPage />} /> */}
             <Route path="sales/delivery" element={<DeliveryTrackingPage />} />
             <Route path="sales/payments" element={<PaymentPage />} />
-<Route path="sales/booking" element={<BookingPage />} />
+{/* <Route path="sales/booking" element={<BookingPage />} /> */}
 
              {/* Khách hàng */}
             <Route path="customers" element={<CustomerList />} />
