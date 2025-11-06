@@ -6,7 +6,6 @@ import {
   Select,
   Checkbox,
   Card,
-  notification,
   Table,
   Space,
   Tag,
@@ -22,6 +21,7 @@ import {
   LockOutlined,
   UnlockOutlined,
 } from "@ant-design/icons";
+import { App as AntdApp } from "antd";
 
 const roleOptions = [
   { label: "Đại lý", value: "DEALER_MANAGER" },
@@ -34,6 +34,7 @@ export default function ManageAccount() {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);
+  const { notification } = AntdApp.useApp();
 
   // Load accounts from API
   const loadAccounts = async () => {
