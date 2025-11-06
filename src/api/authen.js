@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/evdealer/api/v1";
+const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
 
 export const login = async (username, password) => {
   const basicAuth = btoa(`${username}:${password}`);

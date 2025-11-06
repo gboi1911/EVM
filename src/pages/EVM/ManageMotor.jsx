@@ -226,7 +226,7 @@ export default function ManageMotor() {
       <Card title="Quản lý động cơ">
         <div style={{ marginBottom: 16 }}>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Tạo xe mới
+            Tạo động cơ mới
           </Button>
         </div>
 

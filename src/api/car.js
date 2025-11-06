@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/evdealer/api/v1";
+const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
 
 export const getCarDetails = async (carId) => {
   const token = localStorage.getItem("access_token");

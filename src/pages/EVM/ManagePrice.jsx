@@ -13,7 +13,12 @@ import {
   Select,
   DatePicker,
 } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
 import {
   getPriceListByLevel,
   getPriceDetailsById,
@@ -36,6 +41,8 @@ export default function ManagePrice() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailData, setDetailData] = useState([]);
 
   useEffect(() => {
     fetchPrices(selectedLevel);
@@ -51,6 +58,12 @@ export default function ManagePrice() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDetail = (record) => {
+    // record.programDetails là array
+    setDetailData(record.programDetails || []);
+    setDetailOpen(true);
   };
 
   const openModal = async (record = null) => {
@@ -156,6 +169,13 @@ export default function ManagePrice() {
       render: (_, record) => (
         <Space>
           <Button
+            icon={<EyeOutlined />}
+            onClick={() => openDetail(record)}
+            type="link"
+          >
+            Xem
+          </Button>
+          <Button
             icon={<EditOutlined />}
             onClick={() => openModal(record)}
             type="link"
@@ -207,9 +227,7 @@ export default function ManagePrice() {
       </Card>
 
       <Modal
-        title={
-          editing ? "Cập nhật thông tin giá" : "Thêm mới giá sỉ / khuyến mãi"
-        }
+        title={editing ? "Cập nhật thông tin" : "Thêm mới chương trình giá"}
         open={modalOpen}
         onOk={handleOk}
         onCancel={() => setModalOpen(false)}
@@ -251,6 +269,29 @@ export default function ManagePrice() {
             />
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Chi tiết giá"
+        open={detailOpen}
+        onCancel={() => setDetailOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+        width={800}
+      >
+        <Table
+          columns={[
+            { title: "Mẫu xe", dataIndex: "carName" },
+            { title: "Giá tối thiểu", dataIndex: "minPrice" },
+            { title: "Giá đề xuất", dataIndex: "suggestedPrice" },
+            { title: "Giá tối đa", dataIndex: "maxPrice" },
+          ]}
+          dataSource={detailData}
+          rowKey="id"
+          pagination={false}
+        />
       </Modal>
     </div>
   );
