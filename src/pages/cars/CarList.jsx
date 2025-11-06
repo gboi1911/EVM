@@ -1,12 +1,30 @@
 // src/pages/cars/CarList.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import {
-  Tag, Card, Button, Row, Col, Image, Modal, Input,
-  Select, Slider, Space, Spin, Carousel, message,
+  Tag,
+  Card,
+  Button,
+  Row,
+  Col,
+  Image,
+  Modal,
+  Input,
+  Select,
+  Slider,
+  Space,
+  Spin,
+  Carousel,
+  message,
 } from "antd";
 import {
-  DollarOutlined, SettingOutlined, ThunderboltOutlined, CarOutlined,
-  BgColorsOutlined, SearchOutlined, LeftOutlined, RightOutlined,
+  DollarOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
+  CarOutlined,
+  BgColorsOutlined,
+  SearchOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -98,7 +116,9 @@ export default function CarList() {
 
   if (loading)
     return (
-      <div style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}>
+      <div
+        style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}
+      >
         <Spin tip="Đang tải danh sách xe..." />
       </div>
     );
@@ -253,18 +273,32 @@ export default function CarList() {
                 type="text" icon={<LeftOutlined />}
                 onClick={() => carouselRef.current.prev()}
                 style={{
-                  position: "absolute", top: "45%", left: 10, zIndex: 2,
-                  color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "absolute",
+                  top: "45%",
+                  left: 10,
+                  zIndex: 2,
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               />
               <Button
                 type="text" icon={<RightOutlined />}
                 onClick={() => carouselRef.current.next()}
                 style={{
-                  position: "absolute", top: "45%", right: 10, zIndex: 2,
-                  color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "absolute",
+                  top: "45%",
+                  right: 10,
+                  zIndex: 2,
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               />
 
@@ -277,8 +311,7 @@ export default function CarList() {
                 {detailCar.performanceDetailGetDto?.rangeMiles} miles
               </p>
               <p>
-                <BgColorsOutlined /> Màu:{" "}
-                {detailCar.color?.colorName || "N/A"}
+                <BgColorsOutlined /> Màu: {detailCar.color?.colorName || "N/A"}
               </p>
             </div>
           )

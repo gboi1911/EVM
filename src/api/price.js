@@ -51,7 +51,7 @@ export const updatePriceById = async (priceId, priceData) => {
 
 export const createPrice = async (priceData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/price-program/create`, {
+  const response = await fetch(`${API_BASE}/price-program`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

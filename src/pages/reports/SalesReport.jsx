@@ -3,7 +3,7 @@
 import { Table, Statistic, Card, Spin, message } from "antd";
 import { useEffect, useState } from "react";
 // THAY ĐỔI 1: Sửa tên hàm import cho đúng
-import { getStaffRevenue } from "../../api/reports"; 
+import { getStaffRevenue } from "../../api/reports";
 
 export default function SalesReport() {
   const [data, setData] = useState([]); // Khởi tạo là mảng rỗng []
@@ -16,8 +16,7 @@ export default function SalesReport() {
         const response = await getStaffRevenue(); // Gọi API
 
         // THAY ĐỔI 2: Gán 'response.data' (mảng) thay vì 'response' (object)
-        setData(response.data); 
-
+        setData(response.data);
       } catch (e) {
         message.error("Không tải được báo cáo doanh thu");
       } finally {
@@ -29,7 +28,10 @@ export default function SalesReport() {
   }, []); // Chạy 1 lần khi load trang
 
   // Dòng này (trước đây là dòng 21) sẽ hoạt động vì 'data' là mảng
-  const total = data.reduce((total, currentItem) => total + currentItem.revenue, 0);
+  const total = data.reduce(
+    (total, currentItem) => total + currentItem.revenue,
+    0
+  );
 
   const columns = [
     { title: "Mã NV", dataIndex: "staffId" },
@@ -43,12 +45,12 @@ export default function SalesReport() {
   ];
 
   return (
-    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+    <div style={{ backgroundColor: "#fff", minHeight: "100vh", padding: 40 }}>
       <div
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          background: "#fff",
+          background: "#f3f0f0ff",
           borderRadius: 12,
           padding: 24,
         }}
@@ -56,7 +58,7 @@ export default function SalesReport() {
         <h2
           style={{
             fontSize: 25,
-          fontWeight: 700,
+            fontWeight: 700,
             color: "#059669",
             textAlign: "center",
             marginBottom: 24,
@@ -74,7 +76,7 @@ export default function SalesReport() {
                 title="Tổng doanh thu"
                 value={total}
                 suffix="₫"
-                valueStyle={{ color: '#059669' }}
+                valueStyle={{ color: "#059669" }}
               />
             </Card>
             <Table columns={columns} dataSource={data} rowKey="staffId" />

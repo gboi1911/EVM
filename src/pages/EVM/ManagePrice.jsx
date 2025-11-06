@@ -35,7 +35,7 @@ export default function ManagePrice() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
-  const [selectedLevel, setSelectedLevel] = useState(1); // Default level
+  const [selectedLevel, setSelectedLevel] = useState(1);
 
   useEffect(() => {
     fetchPrices(selectedLevel);
@@ -57,7 +57,6 @@ export default function ManagePrice() {
     setEditing(record);
     setModalOpen(true);
     if (record) {
-      // Fetch details if editing an existing record
       const details = await getPriceDetailsById(record.priceProgramId);
       form.setFieldsValue({
         dealerHierarchy: details.dealerHierarchy,
@@ -74,19 +73,17 @@ export default function ManagePrice() {
     try {
       const values = await form.validateFields();
       setLoading(true);
+
+      const startDay = values.startDate.format("YYYY-MM-DDTHH:mm:ss");
+      const endDay = values.endDate.format("YYYY-MM-DDTHH:mm:ss");
+
       const requestBody = {
         dealerHierarchy: values.dealerHierarchy,
-        startDay: moment(values.startDate)
-          .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
-          .utc()
-          .format("YYYY-MM-DDTHH:mm:ss[Z]"),
-        endDay: moment(values.endDate)
-          .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
-          .utc()
-          .format("YYYY-MM-DDTHH:mm:ss[Z]"),
+        startDay,
+        endDay,
       };
+
       if (editing) {
-        // Update existing price program
         await updatePriceById(editing.priceProgramId, requestBody);
         setData((prev) =>
           prev.map((item) =>
@@ -97,7 +94,6 @@ export default function ManagePrice() {
         );
         notification.success({ message: "Cập nhật thành công!" });
       } else {
-        // Create new price program
         const added = await createPrice(requestBody);
         setData((prev) => [...prev, added]);
         notification.success({ message: "Thêm mới thành công!" });
@@ -211,7 +207,11 @@ export default function ManagePrice() {
             name="startDate"
             rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu!" }]}
           >
-            <DatePicker style={{ width: "100%" }} />
+            <DatePicker
+              style={{ width: "100%" }}
+              showTime
+              format="YYYY-MM-DD HH:mm:ss"
+            />
           </Form.Item>
 
           <Form.Item
@@ -221,7 +221,11 @@ export default function ManagePrice() {
               { required: true, message: "Vui lòng chọn ngày kết thúc!" },
             ]}
           >
-            <DatePicker style={{ width: "100%" }} />
+            <DatePicker
+              style={{ width: "100%" }}
+              showTime
+              format="YYYY-MM-DD HH:mm:ss"
+            />
           </Form.Item>
         </Form>
       </Modal>

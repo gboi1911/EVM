@@ -44,20 +44,20 @@ export default function DebtReport() {
   ];
 
   return (
-    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+    <div style={{ backgroundColor: "#ffff", minHeight: "100vh", padding: 40 }}>
       <div
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          background: "#fff",
+          background: "#f3f0f0ff",
           borderRadius: 12,
           padding: 24,
         }}
       >
         <h2
           style={{
-               fontSize: 25,
-          fontWeight: 700,
+            fontSize: 25,
+            fontWeight: 700,
             color: "#059669",
             textAlign: "center",
             marginBottom: 24,
