@@ -1,4 +1,4 @@
-// src/pages/vehicles/CarList.jsx
+// src/pages/cars/CarList.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Tag,
@@ -27,8 +27,8 @@ import {
   RightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-// THAY ĐỔI 1: Import hàm API chuẩn, xóa axios
-import { getListCars, getCarDetail } from "../../api/car";
+
+import { getAllCars, getCarDetails } from "../../api/cars"; // Thêm .js
 
 const { Option } = Select;
 
@@ -38,7 +38,7 @@ export default function CarList() {
   const [selectedCars, setSelectedCars] = useState([]);
   const [compareModal, setCompareModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 100000000]);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
   const [sortOption, setSortOption] = useState(null);
   const [detailCar, setDetailCar] = useState(null);
   const [fetchingDetail, setFetchingDetail] = useState(false);
@@ -46,13 +46,13 @@ export default function CarList() {
   const navigate = useNavigate();
   const carouselRef = useRef(null);
 
-  // THAY ĐỔI 2: Dùng API chuẩn (getListCars)
+  // THAY ĐỔI 2: Sửa tên hàm gọi
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const res = await getListCars({ pageNo: 0, pageSize: 50 });
-        console.log("CAR API RESPONSE:", res.data);
-        setCars(res.data.carInfoGetDtos || []);
+        const res = await getAllCars(0, 50); // Dùng getAllCars
+        console.log("CAR API RESPONSE:", res);
+        setCars(res.carInfoGetDtos || []); // API (fetch) trả về data
       } catch (err) {
         console.error("FETCH ERROR:", err);
         message.error("Không thể tải danh sách xe");
@@ -80,13 +80,13 @@ export default function CarList() {
     }
   };
 
-  // THAY ĐỔI 3: Dùng API chuẩn (getCarDetail)
+  // THAY ĐỔI 3: Sửa tên hàm gọi (thêm 's')
   const handleViewDetail = async (carId) => {
     try {
       setFetchingDetail(true);
-      const res = await getCarDetail(carId);
-      console.log("DETAIL API RESPONSE:", res.data);
-      setDetailCar(res.data);
+      const res = await getCarDetails(carId); // Dùng getCarDetails
+      console.log("DETAIL API RESPONSE:", res);
+      setDetailCar(res); // API (fetch) trả về data
     } catch (err) {
       console.error("DETAIL FETCH ERROR:", err);
       message.error("Không thể tải chi tiết xe");
@@ -95,23 +95,18 @@ export default function CarList() {
     }
   };
 
-  // 🧠 Lọc, tìm kiếm, sắp xếp
+  // Logic lọc
   const filteredCars = useMemo(() => {
     let filtered = cars.filter((car) => {
       const matchesSearch = car.carName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
-
-      // THAY ĐỔI 4: Logic lọc giá
-      // Nếu giá là 0 (LIÊN HỆ), luôn hiển thị
-      const matchesPrice =
-        car.price === 0 ||
-        (car.price >= priceRange[0] && car.price <= priceRange[1]);
-
+        
+      const matchesPrice = car.price === 0 || (car.price >= priceRange[0] && car.price <= priceRange[1]);
+        
       return matchesSearch && matchesPrice;
     });
 
-    // Sắp xếp
     if (sortOption === "priceAsc") filtered.sort((a, b) => a.price - b.price);
     else if (sortOption === "priceDesc")
       filtered.sort((a, b) => b.price - a.price);
@@ -142,7 +137,7 @@ export default function CarList() {
         Danh mục xe điện
       </h2>
 
-      {/* Bộ lọc (Giữ nguyên) */}
+      {/* Bộ lọc */}
       <Space
         direction="vertical"
         size="middle"
@@ -160,35 +155,7 @@ export default function CarList() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        {/* <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8}>
-            <label style={{ fontWeight: 600 }}>Sắp xếp theo:</label>
-            <Select
-              style={{ width: "100%" }}
-              placeholder="Chọn tiêu chí sắp xếp"
-              allowClear
-              value={sortOption}
-              onChange={(value) => setSortOption(value)}
-            >
-              <Option value="priceAsc">Giá: Thấp → Cao</Option>
-              <Option value="priceDesc">Giá: Cao → Thấp</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={24} md={8}>
-            <label style={{ fontWeight: 600 }}>Khoảng giá ($):</label>
-            <Slider
-              range
-              min={0}
-              max={100000} // Giảm max range
-              step={1000}
-              value={priceRange}
-              tooltip={{
-                formatter: (v) => v.toLocaleString() + " $",
-              }}
-              onChange={(value) => setPriceRange(value)}
-            />
-          </Col>
-        </Row> */}
+   
       </Space>
 
       {/* Danh sách xe */}
@@ -225,17 +192,12 @@ export default function CarList() {
                   }
                 >
                   <h3 style={{ fontSize: "15px" }}>{car.carName}</h3>
-
-                  {/* THAY ĐỔI 5: Logic render giá */}
-                  <p
-                    style={{
-                      color: car.price === 0 ? "#d32f2f" : "#059669",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {car.price === 0
-                      ? "LIÊN HỆ"
-                      : car.price.toLocaleString() + " $"}
+                  
+                  <p style={{ 
+                    color: car.price === 0 ? "#d32f2f" : "#059669", 
+                    fontWeight: 600 
+                  }}>
+                    {car.price === 0 ? "LIÊN HỆ" : car.price.toLocaleString() + " $"}
                   </p>
 
                   <div style={{ display: "flex", gap: 6 }}>
@@ -264,7 +226,7 @@ export default function CarList() {
         )}
       </Row>
 
-      {/* Nút so sánh (Giữ nguyên) */}
+      {/* Nút so sánh */}
       <div style={{ textAlign: "center", marginTop: 32 }}>
         <Button
           type="primary"
@@ -276,7 +238,7 @@ export default function CarList() {
         </Button>
       </div>
 
-      {/* Modal Chi tiết xe (Giữ nguyên) */}
+      {/* Modal Chi tiết xe */}
       <Modal
         open={!!detailCar}
         onCancel={() => setDetailCar(null)}
@@ -307,11 +269,8 @@ export default function CarList() {
                   </div>
                 ))}
               </Carousel>
-
-              {/* Mũi tên điều hướng */}
               <Button
-                type="text"
-                icon={<LeftOutlined />}
+                type="text" icon={<LeftOutlined />}
                 onClick={() => carouselRef.current.prev()}
                 style={{
                   position: "absolute",
@@ -327,8 +286,7 @@ export default function CarList() {
                 }}
               />
               <Button
-                type="text"
-                icon={<RightOutlined />}
+                type="text" icon={<RightOutlined />}
                 onClick={() => carouselRef.current.next()}
                 style={{
                   position: "absolute",
