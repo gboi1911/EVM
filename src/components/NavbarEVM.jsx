@@ -1,5 +1,5 @@
-import { Layout, Menu } from "antd";
-import { Button } from "antd";
+import React, { useEffect, useState } from "react";
+import { Layout, Menu, Dropdown, Avatar, Button } from "antd";
 import { LogoutOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,7 +11,10 @@ import {
   UsergroupAddOutlined,
   FileTextOutlined,
   BarChartOutlined,
+  RobotOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
+import { getProfile } from "../api/authen";
 import logo from "../assets/logo.png";
 
 const { Header } = Layout;
@@ -26,6 +29,16 @@ const items = [
         key: "catalog",
         icon: <AppstoreOutlined />,
         label: "Quản lý danh mục xe điện",
+      },
+      {
+        key: "car",
+        icon: <CarOutlined />,
+        label: "Quản lý xe điện",
+      },
+      {
+        key: "motorbike",
+        icon: <DashboardOutlined />,
+        label: "Quản lý động cơ",
       },
       {
         key: "inventory",
@@ -71,18 +84,50 @@ const items = [
         icon: <ClusterOutlined />,
         label: "Tồn kho & tốc độ tiêu thụ",
       },
+      {
+        key: "AIforecast",
+        icon: <RobotOutlined />,
+        label: "AI dự báo nhu cầu để lên kế hoạch sản xuất & phân phối",
+      },
     ],
   },
 ];
 
 export default function NavbarEVM() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const profile = await getProfile();
+        if (mounted) setUsername(profile.username || profile.fullName || "");
+      } catch (err) {
+        // ignore, user may not be logged in
+      }
+    })();
+    return () => (mounted = false);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     navigate("/login");
   };
+
+  const userMenu = (
+    <Menu
+      onClick={(e) => {
+        if (e.key === "profile") navigate("/homeEVM/profile");
+        if (e.key === "logout") handleLogout();
+      }}
+      items={[
+        { key: "profile", label: "Hồ sơ" },
+        { key: "logout", label: "Đăng xuất" },
+      ]}
+    />
+  );
 
   const handleMenuClick = (e) => {
     if (e.key === "account") {
@@ -91,7 +136,21 @@ export default function NavbarEVM() {
     if (e.key === "catalog") {
       navigate("/homeEVM/manage-category");
     }
-    // Add more navigation logic for other keys if needed
+    if (e.key === "inventory") {
+      navigate("/homeEVM/manage-inventory");
+    }
+    if (e.key === "pricing") {
+      navigate("/homeEVM/manage-price");
+    }
+    if (e.key === "car") {
+      navigate("/homeEVM/manage-car");
+    }
+    if (e.key === "motorbike") {
+      navigate("/homeEVM/manage-motorbike");
+    }
+    if (e.key === "AIforecast") {
+      navigate("/homeEVM/AIforecast");
+    }
   };
 
   return (
@@ -119,15 +178,28 @@ export default function NavbarEVM() {
         className="flex-1 bg-emerald-700 border-none"
         onClick={handleMenuClick}
       />
-      <Button
-        type="text"
-        icon={<LogoutOutlined />}
-        className="ml-4 !text-white"
-        style={{ color: "#fff" }}
-        onClick={handleLogout}
-      >
-        Đăng xuất
-      </Button>
+      {/* User avatar + dropdown */}
+      <div className="flex items-center gap-4">
+        <Dropdown overlay={userMenu} trigger={["click"]}>
+          <div className="flex items-center cursor-pointer text-white">
+            <Avatar style={{ backgroundColor: "#87d068" }} size="small">
+              {username ? username.charAt(0).toUpperCase() : "U"}
+            </Avatar>
+            <span className="ml-2">{username || "User"}</span>
+          </div>
+        </Dropdown>
+
+        {/* Optional quick logout button (kept for backward compatibility)
+        <Button
+          type="text"
+          icon={<LogoutOutlined />}
+          className="ml-4 !text-white"
+          style={{ color: "#fff" }}
+          onClick={handleLogout}
+        >
+          Đăng xuất
+        </Button> */}
+      </div>
     </Header>
   );
 }

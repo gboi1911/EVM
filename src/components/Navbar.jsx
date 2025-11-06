@@ -1,4 +1,5 @@
-import { Layout, Menu, Button } from "antd";
+import { Layout, Menu, Dropdown, Avatar, Button } from "antd";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   CarOutlined,
@@ -8,11 +9,26 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import logo from "../assets/logo.png";
+import { getProfile } from "../api/authen";
 
 const { Header } = Layout;
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const profile = await getProfile();
+        if (mounted) setUsername(profile.username || profile.fullName || "");
+      } catch (err) {
+        // ignore, user may not be logged in
+      }
+    })();
+    return () => (mounted = false);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -20,6 +36,19 @@ export default function Navbar() {
     // Clear auth info here if needed
     navigate("/login");
   };
+
+  const userMenu = (
+    <Menu
+      onClick={(e) => {
+        if (e.key === "profile") navigate("/profile");
+        if (e.key === "logout") handleLogout();
+      }}
+      items={[
+        { key: "profile", label: "Hồ sơ" },
+        { key: "logout", label: "Đăng xuất" },
+      ]}
+    />
+  );
 
   return (
     <Header className="flex items-center bg-emerald-700 px-6">
@@ -122,7 +151,19 @@ export default function Navbar() {
         ]}
       />
 
-      {/* Logout Button */}
+      {/* User avatar + dropdown */}
+      <div className="flex items-center gap-4">
+        <Dropdown overlay={userMenu} trigger={["click"]}>
+          <div className="flex items-center cursor-pointer text-white">
+            <Avatar style={{ backgroundColor: "#87d068" }} size="small">
+              {username ? username.charAt(0).toUpperCase() : "U"}
+            </Avatar>
+            <span className="ml-2">{username || "User"}</span>
+          </div>
+        </Dropdown>
+      </div>
+
+      {/* Logout Button
       <Button
         type="text"
         icon={<LogoutOutlined />}
@@ -131,7 +172,7 @@ export default function Navbar() {
         onClick={handleLogout}
       >
         Đăng xuất
-      </Button>
+      </Button> */}
     </Header>
   );
 } 
