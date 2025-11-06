@@ -1,5 +1,4 @@
-
-import apiClient from './apiClient'; 
+import apiClient from "../api/apiClient";
 // GET /api/v1/orders/reports/customer-debts
 export const getCustomerDebts = () => {
   return apiClient.get('/orders/reports/customer-debts');

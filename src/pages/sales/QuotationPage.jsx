@@ -5,14 +5,15 @@ import {
 } from "antd";
 import { SendOutlined, FilePdfOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { createOrder } from "../../api/order";
-import { getListCars } from "../../api/car"; 
+// THAY ĐỔI 1: Sửa tên hàm import
+import { getAllCars } from "../../api/car"; 
 
 const { Text } = Typography;
 
 export default function QuotationPage() {
   const [carList, setCarList] = useState([]);
   const [carLoading, setCarLoading] = useState(true);
-
+  // (Các state khác giữ nguyên)
   const [selectedCar, setSelectedCar] = useState(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -20,17 +21,21 @@ export default function QuotationPage() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
+
   useEffect(() => {
     const fetchCars = async () => {
       try {
         setCarLoading(true);
-        const response = await getListCars(); 
-        const carsFromApi = response.data.carInfoGetDtos || [];
+        // THAY ĐỔI 2: Sửa tên hàm gọi
+        const response = await getAllCars(); // Gọi API thật
+        
+        // API (fetch) trả về { carInfoGetDtos: [...] }
+        const carsFromApi = response.carInfoGetDtos || [];
 
         const formattedCarList = carsFromApi.map(car => ({
           key: car.carId,
           model: car.carName,
-          price: car.price // Dùng giá thật (sẽ là 0)
+          price: car.price 
         }));
         
         setCarList(formattedCarList);
@@ -45,6 +50,7 @@ export default function QuotationPage() {
     fetchCars();
   }, []); 
 
+  // (Hàm onFinish và phần còn lại giữ nguyên)
   const onFinish = async (values) => {
     if (!selectedCar) {
       message.error("Vui lòng chọn xe (Bắt buộc)!");
@@ -60,7 +66,6 @@ export default function QuotationPage() {
       let finalTotalAmount; 
 
       if (!price || price === 0) {
-        // TRƯỜNG HỢP 1: Xe "LIÊN HỆ" (giá 0)
         finalTotalAmount = values.totalAmount;
         if (!finalTotalAmount || finalTotalAmount <= 0) {
            message.error("Vui lòng nhập Tổng tiền cho xe LIÊN HỆ!");
@@ -68,7 +73,6 @@ export default function QuotationPage() {
            return;
         }
       } else {
-        // TRƯỜNG HỢP 2: Xe có giá
         const quantity = values.quantity || 1;
         const discount = values.discount || 0;
         finalTotalAmount = (price * quantity) * (1 - (discount / 100));
@@ -83,7 +87,7 @@ export default function QuotationPage() {
       console.log("✅ Đang gửi payload lên API:", payload);
 
       const response = await createOrder(payload);
-      const orderDetail = response.data;
+      const orderDetail = response.data; // Giả sử createOrder (dùng apiClient) trả về { data: ... }
       message.success(`Tạo đơn hàng #${orderDetail.id} thành công`);
       form.resetFields();
       setSelectedCar(null);
@@ -178,7 +182,6 @@ export default function QuotationPage() {
                   <Input placeholder="Nhập SĐT (ví dụ: 0901234567)" />
                 </Form.Item>
 
-                {/* Chỉ hiển thị nếu xe có giá > 0 */}
                 {selectedCar && selectedCar.price > 0 && (
                   <>
                     <Form.Item
@@ -200,7 +203,6 @@ export default function QuotationPage() {
                   </>
                 )}
                 
-                {/* Chỉ hiển thị nếu xe có giá == 0 (LIÊN HỆ) */}
                 {selectedCar && selectedCar.price === 0 && (
                   <Form.Item
                     label="Tổng tiền (Do giá LIÊN HỆ)"

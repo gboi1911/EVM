@@ -1,5 +1,5 @@
 // src/api/customer.js
-import apiClient from './apiClient'; // Import apiClient "thông minh"
+import apiClient from "../api/apiClient";
 
 /**
  * Lấy danh sách khách hàng (có phân trang)
