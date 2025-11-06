@@ -11,45 +11,22 @@ import {
   notification,
   Card,
   Select,
+  DatePicker,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
-
-// 🧩 Dummy API (replace later with real API calls)
-const fetchPrices = async () => [
-  {
-    id: 1,
-    dealer: "Đại lý Hà Nội",
-    model: "VF 8",
-    wholesalePrice: 900000000,
-    discount: 5,
-    promotion: "Giảm 10 triệu tháng 10",
-  },
-  {
-    id: 2,
-    dealer: "Đại lý TP.HCM",
-    model: "VF e34",
-    wholesalePrice: 700000000,
-    discount: 3,
-    promotion: "Tặng bảo hiểm 1 năm",
-  },
-];
-
-const addPrice = async (data) => ({
-  ...data,
-  id: Math.floor(Math.random() * 10000),
-});
-const updatePrice = async (id, data) => ({ id, ...data });
-const removePrice = async (id) => true;
+import {
+  getPriceListByLevel,
+  getPriceDetailsById,
+  updatePriceById,
+  createPrice,
+  deletePriceById,
+} from "../../api/price";
+import moment from "moment";
 
 const dealerOptions = [
-  { label: "Đại lý Hà Nội", value: "Đại lý Hà Nội" },
-  { label: "Đại lý TP.HCM", value: "Đại lý TP.HCM" },
-  { label: "Đại lý Đà Nẵng", value: "Đại lý Đà Nẵng" },
-];
-const modelOptions = [
-  { label: "VF e34", value: "VF e34" },
-  { label: "VF 8", value: "VF 8" },
-  { label: "VF 9", value: "VF 9" },
+  { label: "Đại lý 1", value: 1 },
+  { label: "Đại lý 2", value: 2 },
+  { label: "Đại lý 3", value: 3 },
 ];
 
 export default function ManagePrice() {
@@ -58,33 +35,70 @@ export default function ManagePrice() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
+  const [selectedLevel, setSelectedLevel] = useState(1); // Default level
 
   useEffect(() => {
-    setLoading(true);
-    fetchPrices()
-      .then(setData)
-      .finally(() => setLoading(false));
-  }, []);
+    fetchPrices(selectedLevel);
+  }, [selectedLevel]);
 
-  const openModal = (record = null) => {
+  const fetchPrices = async (level) => {
+    setLoading(true);
+    try {
+      const prices = await getPriceListByLevel(level);
+      setData(prices);
+    } catch (error) {
+      notification.error({ message: "Failed to fetch prices!" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openModal = async (record = null) => {
     setEditing(record);
     setModalOpen(true);
-    if (record) form.setFieldsValue(record);
-    else form.resetFields();
+    if (record) {
+      // Fetch details if editing an existing record
+      const details = await getPriceDetailsById(record.priceProgramId);
+      form.setFieldsValue({
+        dealerHierarchy: details.dealerHierarchy,
+        startDate: moment(details.startDate),
+        endDate: moment(details.endDate),
+        programDetails: details.programDetails,
+      });
+    } else {
+      form.resetFields();
+    }
   };
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
+      const requestBody = {
+        dealerHierarchy: values.dealerHierarchy,
+        startDay: moment(values.startDate)
+          .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+          .utc()
+          .format("YYYY-MM-DDTHH:mm:ss[Z]"),
+        endDay: moment(values.endDate)
+          .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
+          .utc()
+          .format("YYYY-MM-DDTHH:mm:ss[Z]"),
+      };
       if (editing) {
-        const updated = await updatePrice(editing.id, values);
+        // Update existing price program
+        await updatePriceById(editing.priceProgramId, requestBody);
         setData((prev) =>
-          prev.map((item) => (item.id === editing.id ? updated : item))
+          prev.map((item) =>
+            item.priceProgramId === editing.priceProgramId
+              ? { ...item, ...requestBody }
+              : item
+          )
         );
         notification.success({ message: "Cập nhật thành công!" });
       } else {
-        const added = await addPrice(values);
+        // Create new price program
+        const added = await createPrice(requestBody);
         setData((prev) => [...prev, added]);
         notification.success({ message: "Thêm mới thành công!" });
       }
@@ -97,24 +111,26 @@ export default function ManagePrice() {
 
   const handleRemove = async (id) => {
     setLoading(true);
-    await removePrice(id);
-    setData((prev) => prev.filter((item) => item.id !== id));
+    await deletePriceById(id);
+    setData((prev) => prev.filter((item) => item.priceProgramId !== id));
     notification.success({ message: "Xóa thành công!" });
     setLoading(false);
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    { title: "Đại lý", dataIndex: "dealer", key: "dealer" },
-    { title: "Mẫu xe", dataIndex: "model", key: "model" },
     {
-      title: "Giá sỉ (VNĐ)",
-      dataIndex: "wholesalePrice",
-      key: "wholesalePrice",
-      render: (value) => value.toLocaleString("vi-VN"),
+      title: "ID",
+      dataIndex: "priceProgramId",
+      key: "priceProgramId",
+      width: 80,
     },
-    { title: "Chiết khấu (%)", dataIndex: "discount", key: "discount" },
-    { title: "Khuyến mãi", dataIndex: "promotion", key: "promotion" },
+    {
+      title: "Đại lý cấp",
+      dataIndex: "dealerHierarchy",
+      key: "dealerHierarchy",
+    },
+    { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate" },
+    { title: "Ngày kết thúc", dataIndex: "endDate", key: "endDate" },
     {
       title: "Thao tác",
       key: "action",
@@ -129,7 +145,7 @@ export default function ManagePrice() {
           </Button>
           <Popconfirm
             title="Bạn có chắc muốn xóa?"
-            onConfirm={() => handleRemove(record.id)}
+            onConfirm={() => handleRemove(record.priceProgramId)}
             okText="Xóa"
             cancelText="Hủy"
           >
@@ -165,7 +181,7 @@ export default function ManagePrice() {
         <Table
           columns={columns}
           dataSource={data}
-          rowKey="id"
+          rowKey="priceProgramId"
           loading={loading}
           pagination={{ pageSize: 6 }}
         />
@@ -184,47 +200,28 @@ export default function ManagePrice() {
         <Form form={form} layout="vertical">
           <Form.Item
             label="Đại lý"
-            name="dealer"
+            name="dealerHierarchy"
             rules={[{ required: true, message: "Vui lòng chọn đại lý!" }]}
           >
             <Select options={dealerOptions} placeholder="Chọn đại lý" />
           </Form.Item>
 
           <Form.Item
-            label="Mẫu xe"
-            name="model"
-            rules={[{ required: true, message: "Vui lòng chọn mẫu xe!" }]}
+            label="Ngày bắt đầu"
+            name="startDate"
+            rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu!" }]}
           >
-            <Select options={modelOptions} placeholder="Chọn mẫu xe" />
+            <DatePicker style={{ width: "100%" }} />
           </Form.Item>
 
           <Form.Item
-            label="Giá sỉ (VNĐ)"
-            name="wholesalePrice"
-            rules={[{ required: true, message: "Vui lòng nhập giá sỉ!" }]}
+            label="Ngày kết thúc"
+            name="endDate"
+            rules={[
+              { required: true, message: "Vui lòng chọn ngày kết thúc!" },
+            ]}
           >
-            <InputNumber
-              min={0}
-              style={{ width: "100%" }}
-              formatter={(value) =>
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              }
-              parser={(value) => value.replace(/,/g, "")}
-              placeholder="Nhập giá sỉ"
-            />
-          </Form.Item>
-
-          <Form.Item label="Chiết khấu (%)" name="discount">
-            <InputNumber
-              min={0}
-              max={100}
-              style={{ width: "100%" }}
-              placeholder="%"
-            />
-          </Form.Item>
-
-          <Form.Item label="Khuyến mãi" name="promotion">
-            <Input placeholder="Nhập mô tả khuyến mãi (nếu có)" />
+            <DatePicker style={{ width: "100%" }} />
           </Form.Item>
         </Form>
       </Modal>

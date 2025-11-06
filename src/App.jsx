@@ -45,26 +45,35 @@ const DebtReport = React.lazy(() => import("./pages/reports/DebtReport"));
 const ManageCategory = React.lazy(() => import("./pages/EVM/ManageCategory"));
 const ManageInventory = React.lazy(() => import("./pages/EVM/ManageInventory"));
 const ManagePrice = React.lazy(() => import("./pages/EVM/ManagePrice"));
+const ManageInventoryAndSalesSpeed = React.lazy(() =>
+  import("./pages/EVM/ManageInventory&SpeedSale")
+);
+const ManageSalesReport = React.lazy(() =>
+  import("./pages/EVM/SalesByAreaAndDealer")
+);
+
+import { App as AntdApp } from "antd"; // Import Ant Design App Component và đổi tên
 
 function App() {
   return (
-    <Router>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
+    <AntdApp>
+      <Router>
+        <Suspense fallback={<div>Loading...</div>}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected routes with layout */}
-          <Route path="/" element={<MainLayout />}>
-            <Route path="homeDealer" element={<Home />} />
-            <Route path="homeEVM" element={<HomeEVM />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="manage-account" element={<ManageAccount />} />
+            {/* Protected routes with layout */}
+            <Route path="/" element={<MainLayout />}>
+              <Route path="homeDealer" element={<Home />} />
+              <Route path="homeEVM" element={<HomeEVM />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="manage-account" element={<ManageAccount />} />
 
-            {/* Vehicles menu (Navbar) */}
-            <Route path="vehicles" element={<CarList />} />
-            <Route path="vehicles/compare" element={<CarCompare />} />
+              {/* Vehicles menu (Navbar) */}
+              <Route path="vehicles" element={<CarList />} />
+              <Route path="vehicles/compare" element={<CarCompare />} />
 
             {/* Quản lý bán hàng - khớp Navbar */}
             <Route path="sales/quotes" element={<QuotationPage />} />
@@ -75,33 +84,45 @@ function App() {
             <Route path="sales/payments" element={<PaymentPage />} />
 {/* <Route path="sales/booking" element={<BookingPage />} /> */}
 
-            {/* Khách hàng */}
-            <Route path="customers" element={<CustomerList />} />
-            <Route
-              path="customers/test-drive"
-              element={<TestDriveSchedule />}
-            />
-            <Route path="customers/feedback" element={<FeedbackManagement />} />
+              {/* Khách hàng */}
+              <Route path="customers" element={<CustomerList />} />
+              <Route
+                path="customers/test-drive"
+                element={<TestDriveSchedule />}
+              />
+              <Route
+                path="customers/feedback"
+                element={<FeedbackManagement />}
+              />
 
-            {/* Báo cáo */}
-            <Route path="reports/sales" element={<SalesReport />} />
-            <Route path="reports/debt" element={<DebtReport />} />
+              {/* Báo cáo */}
+              <Route path="reports/sales" element={<SalesReport />} />
+              <Route path="reports/debt" element={<DebtReport />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/homeDealer" replace />} />
-            <Route path="homeEVM" element={<HomeEVM />}>
-              <Route path="manage-account" element={<ManageAccount />} />
-              <Route path="manage-category" element={<ManageCategory />} />
-              <Route path="manage-inventory" element={<ManageInventory />} />
-              <Route path="manage-price" element={<ManagePrice />} />
-              <Route path="manage-car" element={<ManageCar />} />
-              <Route path="manage-motorbike" element={<ManageMotorbike />} />
-              <Route path="profile" element={<Profile />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/homeDealer" replace />} />
+              <Route path="homeEVM" element={<HomeEVM />}>
+                <Route path="manage-account" element={<ManageAccount />} />
+                <Route path="manage-category" element={<ManageCategory />} />
+                <Route path="manage-inventory" element={<ManageInventory />} />
+                <Route path="manage-price" element={<ManagePrice />} />
+                <Route path="manage-car" element={<ManageCar />} />
+                <Route path="manage-motorbike" element={<ManageMotorbike />} />
+                <Route
+                  path="manage-inventory-and-sales-speed"
+                  element={<ManageInventoryAndSalesSpeed />}
+                />
+                <Route
+                  path="manage-sales-report"
+                  element={<ManageSalesReport />}
+                />
+                <Route path="profile" element={<Profile />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </Suspense>
-    </Router>
+          </Routes>
+        </Suspense>
+      </Router>
+    </AntdApp>
   );
 }
 

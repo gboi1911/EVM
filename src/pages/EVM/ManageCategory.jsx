@@ -7,7 +7,7 @@ import {
   Input,
   Space,
   Popconfirm,
-  notification,
+  // notification,
   Card,
 } from "antd";
 import {
@@ -22,6 +22,7 @@ import {
   updateCategory,
   removeCategory,
 } from "../../api/category";
+import { App as AntdApp } from "antd"; // Import Ant Design App Component và đổi tên
 
 export default function ManageCategory() {
   const [categories, setCategories] = useState([]);
@@ -29,6 +30,7 @@ export default function ManageCategory() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
+  const { notification } = AntdApp.useApp();
 
   // ✅ Load categories from backend
   const loadData = async () => {

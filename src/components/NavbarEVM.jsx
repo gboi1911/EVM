@@ -151,6 +151,12 @@ export default function NavbarEVM() {
     if (e.key === "AIforecast") {
       navigate("/homeEVM/AIforecast");
     }
+    if (e.key === "stock") {
+      navigate("/homeEVM/manage-inventory-and-sales-speed");
+    }
+    if (e.key === "sales") {
+      navigate("/homeEVM/manage-sales-report");
+    }
   };
 
   return (

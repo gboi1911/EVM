@@ -1,9 +1,10 @@
-import { Form, Input, Button, Checkbox, Card, notification } from "antd";
+import { Form, Input, Button, Checkbox, Card } from "antd";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import logo from "../assets/logo.png";
 import { login } from "../api/authen";
+import { App as AntdApp } from "antd"; // Import Ant Design App Component và đổi tên
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -11,6 +12,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const { notification } = AntdApp.useApp();
 
   // useEffect(() => {
   //   const rememberedUsername = localStorage.getItem("remembered_username");
