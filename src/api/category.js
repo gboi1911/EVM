@@ -38,14 +38,17 @@ export const addCategory = async ({ categoryName }) => {
 
 export const updateCategory = async (categoryId, categoryData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/category/${categoryId}/rename`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(categoryData),
-  });
+  const response = await fetch(
+    `${API_BASE}/category/${categoryId}/rename?categoryName=${categoryData}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(categoryData),
+    }
+  );
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Failed to update category: ${errorText}`);

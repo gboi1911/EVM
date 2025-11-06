@@ -28,6 +28,7 @@ import {
   createCar,
   postImageForCar,
 } from "../../api/car";
+import { App as AntdApp } from "antd";
 
 const { TabPane } = Tabs;
 
@@ -44,6 +45,7 @@ export default function ManageCar() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState("create"); // 'create' | 'edit' | 'view'
   const [form] = Form.useForm();
+  const { notification } = AntdApp.useApp();
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -184,7 +186,11 @@ export default function ManageCar() {
           },
         };
         await createCar(createData);
-        notification.success({ message: "Tạo mới thành công!" });
+        notification.success({
+          message: "Tạo mới thành công!",
+          description: "Chào mừng bạn đến với hệ thống EVD.",
+          placement: "topRight",
+        });
       } else if (modalType === "edit") {
         const updateData = {
           categoryName: values.categoryName,
@@ -194,7 +200,11 @@ export default function ManageCar() {
           year: Number(values.year || 0),
         };
         await updateCar(selectedCar.id, updateData);
-        notification.success({ message: "Cập nhật thành công!" });
+        notification.success({
+          message: "Cập nhật thành công!",
+          description: "Chào mừng bạn đến với hệ thống EVD.",
+          placement: "topRight",
+        });
       }
       setModalVisible(false);
       form.resetFields();
