@@ -85,16 +85,20 @@ export default function SalesByAreaAndDealer() {
             children: loadingDealer ? (
               <Spin />
             ) : (
-              <Bar
-                data={dealerChartData}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: "Doanh số theo đại lý" },
-                  },
-                }}
-              />
+              <div style={{ height: 320, maxWidth: "100%" }}>
+                <Bar
+                  data={dealerChartData}
+                  height={320}
+                  options={{
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                      legend: { display: false },
+                      title: { display: true, text: "Doanh số theo đại lý" },
+                    },
+                  }}
+                />
+              </div>
             ),
           },
           {
@@ -103,16 +107,20 @@ export default function SalesByAreaAndDealer() {
             children: loadingCity ? (
               <Spin />
             ) : (
-              <Bar
-                data={cityChartData}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: "Doanh số theo thành phố" },
-                  },
-                }}
-              />
+              <div style={{ height: 320, maxWidth: "100%" }}>
+                <Bar
+                  data={cityChartData}
+                  height={320}
+                  options={{
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                      legend: { display: false },
+                      title: { display: true, text: "Doanh số theo thành phố" },
+                    },
+                  }}
+                />
+              </div>
             ),
           },
         ]}

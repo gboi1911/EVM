@@ -249,26 +249,30 @@ export default function ManageCar() {
       notification.warn({ message: "Vui lòng chọn tệp để tải lên." });
       return;
     }
+
     setLoading(true);
     try {
-      for (const f of uploadFileList) {
-        if (!f.originFileObj) continue;
-        const fd = new FormData();
-        fd.append("file", f.originFileObj);
-        await postImageForCar(uploadTargetCar.carId || uploadTargetCar.id, fd);
-      }
+      const fd = new FormData();
+
+      uploadFileList.forEach((f) => {
+        if (f.originFileObj) {
+          fd.append("files", f.originFileObj); // <-- phải là "files"
+        }
+      });
+
+      await postImageForCar(
+        uploadTargetCar.carId,
+        uploadFileList.map((x) => x.originFileObj)
+      );
+
       notification.success({ message: "Tải ảnh thành công" });
       setUploadModalVisible(false);
       setUploadTargetCar(null);
       setUploadFileList([]);
-      // refetch list to show new images in row
       await loadCars(pagination.current, pagination.pageSize);
     } catch (err) {
       console.error(err);
-      notification.error({
-        message: "Tải ảnh thất bại",
-        description: err?.message || "",
-      });
+      notification.error({ message: "Tải ảnh thất bại" });
     } finally {
       setLoading(false);
     }

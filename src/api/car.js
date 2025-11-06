@@ -65,20 +65,26 @@ export const updateCar = async (carId, carData) => {
   return await response.json();
 };
 
-export const postImageForCar = async (carId, imageFile) => {
+export const postImageForCar = async (carId, files) => {
   const token = localStorage.getItem("access_token");
   const formData = new FormData();
-  formData.append("image", imageFile);
+
+  // files: array of File objects
+  files.forEach((f) => formData.append("files", f));
+
   const response = await fetch(`${API_BASE}/car/${carId}/upload/images`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
+      // không set Content-Type, browser tự set
     },
     body: formData,
   });
+
   if (!response.ok) {
     throw new Error("Image upload failed");
   }
+
   return await response.json();
 };
 
