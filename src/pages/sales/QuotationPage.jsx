@@ -5,24 +5,9 @@ import {
 } from "antd";
 import { SendOutlined, FilePdfOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { createOrder } from "../../api/order";
-import { getListCars } from "../../api/car"; // Import API xe thật
+import { getListCars } from "../../api/car"; 
 
 const { Text } = Typography;
-
-// !! GIẢI PHÁP TẠM THỜI (Vì API trả về price: 0)
-// Chúng ta sẽ gán giá thủ công. Khi nào backend sửa API, chúng ta sẽ xóa
-const DUMMY_PRICES = {
-  1: 35000, // Sedan LX
-  2: 45000, // SUV GX
-  3: 30000, // Hatchback ZX
-  4: 55000, // Electric EV1
-  5: 48000, // Hybrid HVX
-  6: 60000, // Truck TX
-  7: 42000, // Van VX
-  8: 65000, // Convertible CVX
-  9: 75000, // Sports Car SX
-  10: 80000, // Luxury LX
-};
 
 export default function QuotationPage() {
   const [carList, setCarList] = useState([]);
@@ -35,22 +20,17 @@ export default function QuotationPage() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
-  // Dùng useEffect để tải danh sách xe khi trang mở
   useEffect(() => {
     const fetchCars = async () => {
       try {
         setCarLoading(true);
-        const response = await getListCars(); // Gọi API thật
-        
-        // API trả về { carInfoGetDtos: [...] }
+        const response = await getListCars(); 
         const carsFromApi = response.data.carInfoGetDtos || [];
 
-        // Map dữ liệu API và gán giá "giả"
         const formattedCarList = carsFromApi.map(car => ({
           key: car.carId,
           model: car.carName,
-          // Gán giá từ DUMMY_PRICES, nếu không có thì dùng giá từ API (là 0)
-          price: DUMMY_PRICES[car.carId] || car.price 
+          price: car.price // Dùng giá thật (sẽ là 0)
         }));
         
         setCarList(formattedCarList);
@@ -63,7 +43,7 @@ export default function QuotationPage() {
     };
     
     fetchCars();
-  }, []); // Mảng rỗng = chạy 1 lần
+  }, []); 
 
   const onFinish = async (values) => {
     if (!selectedCar) {
@@ -75,23 +55,32 @@ export default function QuotationPage() {
 
     try {
       setLoading(true);
-      const price = selectedCar.price; 
       
-      if (!price || price === 0) {
-         message.error(`Lỗi: Xe "${selectedCar.model}" có giá là 0. Không thể tạo đơn hàng.`);
-         setLoading(false);
-         return;
-      }
+      const price = selectedCar.price;
+      let finalTotalAmount; 
 
-      const quantity = values.quantity || 1;
-      const discount = values.discount || 0;
-      const calculatedTotal = (price * quantity) * (1 - (discount / 100));
+      if (!price || price === 0) {
+        // TRƯỜNG HỢP 1: Xe "LIÊN HỆ" (giá 0)
+        finalTotalAmount = values.totalAmount;
+        if (!finalTotalAmount || finalTotalAmount <= 0) {
+           message.error("Vui lòng nhập Tổng tiền cho xe LIÊN HỆ!");
+           setLoading(false);
+           return;
+        }
+      } else {
+        // TRƯỜNG HỢP 2: Xe có giá
+        const quantity = values.quantity || 1;
+        const discount = values.discount || 0;
+        finalTotalAmount = (price * quantity) * (1 - (discount / 100));
+      }
 
       const payload = {
         carId: selectedCar.key,
         customerPhone: values.customerPhone,
-        totalAmount: calculatedTotal,
+        totalAmount: finalTotalAmount,
       };
+
+      console.log("✅ Đang gửi payload lên API:", payload);
 
       const response = await createOrder(payload);
       const orderDetail = response.data;
@@ -103,10 +92,10 @@ export default function QuotationPage() {
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error("❌ Create order failed:", err);
-      if (err.errorFields) {
+      if (err.response) {
+        message.error(`Tạo thất bại: ${err.response.data?.message || err.message}`);
+      } else if (err.errorFields) {
          message.error("Vui lòng điền đầy đủ thông tin!");
-      } else if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-        message.error("Lỗi xác thực. Vui lòng đăng nhập lại.");
       } else {
         message.error("Tạo order thất bại. " + (err.message || "Kiểm tra backend"));
       }
@@ -121,14 +110,18 @@ export default function QuotationPage() {
       setCarSelectionError(true);
     }
   };
+  
+  const handleCarSelect = (selectedRow) => {
+    setSelectedCar(selectedRow);
+    setCarSelectionError(false);
+    form.resetFields(['quantity', 'discount', 'totalAmount']);
+  };
 
   return (
     <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
       <div
         style={{
-             fontSize: 25,
-          fontWeight: 700,
-          // maxWidth: 1400,
+          maxWidth: 1400,
           margin: "0 auto",
           background: "#fff",
           borderRadius: 12,
@@ -144,21 +137,24 @@ export default function QuotationPage() {
             <Card
               title="1. Chọn xe (Bắt buộc)"
               style={carSelectionError ? { border: '1px solid #ff4d4f', borderRadius: '8px' } : {}}
-              headStyle={carSelectionError ? { color: '#ff4d4f' } : {}}
+              headStyle={carSelectionError ? { color: '#ff4f4f' } : {}}
             >
               <Spin spinning={carLoading}>
                 <Table
-                  dataSource={carList} // Dùng danh sách xe thật
+                  dataSource={carList} 
                   columns={[
                     { title: "Mẫu xe", dataIndex: "model" },
-                    { title: "Giá ($)", dataIndex: "price", render: (v) => v.toLocaleString() },
+                    { 
+                      title: "Giá ($)", 
+                      dataIndex: "price", 
+                      render: (price) => (price === 0 ? <b style={{color: 'red'}}>LIÊN HỆ</b> : price.toLocaleString()) 
+                    },
                   ]}
                   rowSelection={{
                     type: "radio",
                     selectedRowKeys: selectedCar ? [selectedCar.key] : [],
                     onChange: (_, r) => {
-                      setSelectedCar(r[0]);
-                      setCarSelectionError(false);
+                      handleCarSelect(r[0]); 
                     },
                   }}
                   pagination={false}
@@ -181,29 +177,50 @@ export default function QuotationPage() {
                 >
                   <Input placeholder="Nhập SĐT (ví dụ: 0901234567)" />
                 </Form.Item>
-                <Form.Item
-                  label="Số lượng"
-                  name="quantity"
-                  initialValue={1}
-                  rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
-                >
-                  <InputNumber min={1} style={{ width: "100%" }} />
+
+                {/* Chỉ hiển thị nếu xe có giá > 0 */}
+                {selectedCar && selectedCar.price > 0 && (
+                  <>
+                    <Form.Item
+                      label="Số lượng"
+                      name="quantity"
+                      initialValue={1}
+                      rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
+                    >
+                      <InputNumber min={1} style={{ width: "100%" }} />
+                    </Form.Item>
+                    <Form.Item
+                      label="Chiết khấu (%)"
+                      name="discount"
+                      initialValue={0}
+                      rules={[{ required: true, message: "Vui lòng nhập chiết khấu (nhập 0 nếu không có)" }]}
+                    >
+                      <InputNumber min={0} max={100} style={{ width: "100%" }} />
+                    </Form.Item>
+                  </>
+                )}
+                
+                {/* Chỉ hiển thị nếu xe có giá == 0 (LIÊN HỆ) */}
+                {selectedCar && selectedCar.price === 0 && (
+                  <Form.Item
+                    label="Tổng tiền (Do giá LIÊN HỆ)"
+                    name="totalAmount"
+                    rules={[{ required: true, message: "Vui lòng nhập tổng tiền đã chốt" }]}
+                  >
+                    <InputNumber
+                      min={1}
+                      style={{ width: "100%" }}
+                      formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+                      placeholder="Nhập tổng tiền (ví dụ: 50000)"
+                    />
+                  </Form.Item>
+                )}
+                
+                <Form.Item label="Ghi chú" name="note" rules={[{ required: false }]}>
+                  <Input.TextArea rows={3} placeholder="Thông tin thêm..." />
                 </Form.Item>
-                <Form.Item
-                  label="Chiết khấu (%)"
-                  name="discount"
-                  initialValue={0}
-                  rules={[{ required: true, message: "Vui lòng nhập chiết khấu (nhập 0 nếu không có)" }]}
-                >
-                  <InputNumber min={0} max={100} style={{ width: "100%" }} />
-                </Form.Item>
-                <Form.Item
-                  label="Ghi chú"
-                  name="note"
-                  // rules={[{ required: false, message: "Vui lòng nhập ghi chú (nhập 'Không' nếu không có)" }]}
-                >
-                  <Input.TextArea rows={3} placeholder="Thông tin thêm, lý do chiết khấu,..." />
-                </Form.Item>
+                
                 <Button
                   type="primary"
                   icon={<SendOutlined />}
@@ -218,7 +235,7 @@ export default function QuotationPage() {
         </Row>
       </div>
 
-      {/* Modal thành công (Giữ nguyên) */}
+      {/* Modal thành công */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', color: '#059669' }}>
@@ -242,18 +259,10 @@ export default function QuotationPage() {
             
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0', width: '100%' }}>
               <Space wrap>
-                <Button
-                  icon={<FilePdfOutlined />}
-                  href={successData.quotationUrl}
-                  target="_blank"
-                >
+                <Button icon={<FilePdfOutlined />} href={successData.quotationUrl} target="_blank">
                   View Quotation (Xem Báo giá)
                 </Button>
-                <Button
-                  icon={<FilePdfOutlined />}
-                  href={successData.contractUrl}
-                  target="_blank"
-                >
+                <Button icon={<FilePdfOutlined />} href={successData.contractUrl} target="_blank">
                   View Contract (Xem Hợp đồng)
                 </Button>
               </Space>

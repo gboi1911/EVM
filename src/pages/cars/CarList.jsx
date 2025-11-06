@@ -1,32 +1,16 @@
+// src/pages/vehicles/CarList.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import {
-  Tag,
-  Card,
-  Button,
-  Row,
-  Col,
-  Image,
-  Modal,
-  Input,
-  Select,
-  Slider,
-  Space,
-  Spin,
-  Carousel,
-  message,
+  Tag, Card, Button, Row, Col, Image, Modal, Input,
+  Select, Slider, Space, Spin, Carousel, message,
 } from "antd";
 import {
-  DollarOutlined,
-  SettingOutlined,
-  ThunderboltOutlined,
-  CarOutlined,
-  BgColorsOutlined,
-  SearchOutlined,
-  LeftOutlined,
-  RightOutlined,
+  DollarOutlined, SettingOutlined, ThunderboltOutlined, CarOutlined,
+  BgColorsOutlined, SearchOutlined, LeftOutlined, RightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+// THAY ĐỔI 1: Import hàm API chuẩn, xóa axios
+import { getListCars, getCarDetail } from "../../api/car";
 
 const { Option } = Select;
 
@@ -44,13 +28,11 @@ export default function CarList() {
   const navigate = useNavigate();
   const carouselRef = useRef(null);
 
-  // 🟢 Fetch danh sách xe
+  // THAY ĐỔI 2: Dùng API chuẩn (getListCars)
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:8000/evdealer/api/v1/car/all?pageNo=0&pageSize=50"
-        );
+        const res = await getListCars({ pageNo: 0, pageSize: 50 });
         console.log("CAR API RESPONSE:", res.data);
         setCars(res.data.carInfoGetDtos || []);
       } catch (err) {
@@ -80,13 +62,11 @@ export default function CarList() {
     }
   };
 
-  // 🟡 Fetch chi tiết khi bấm “Chi tiết”
+  // THAY ĐỔI 3: Dùng API chuẩn (getCarDetail)
   const handleViewDetail = async (carId) => {
     try {
       setFetchingDetail(true);
-      const res = await axios.get(
-        `http://localhost:8000/evdealer/api/v1/car/${carId}/detail`
-      );
+      const res = await getCarDetail(carId);
       console.log("DETAIL API RESPONSE:", res.data);
       setDetailCar(res.data);
     } catch (err) {
@@ -103,11 +83,15 @@ export default function CarList() {
       const matchesSearch = car.carName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
-      const matchesPrice =
-        car.price >= priceRange[0] && car.price <= priceRange[1];
+        
+      // THAY ĐỔI 4: Logic lọc giá
+      // Nếu giá là 0 (LIÊN HỆ), luôn hiển thị
+      const matchesPrice = car.price === 0 || (car.price >= priceRange[0] && car.price <= priceRange[1]);
+        
       return matchesSearch && matchesPrice;
     });
 
+    // Sắp xếp
     if (sortOption === "priceAsc") filtered.sort((a, b) => a.price - b.price);
     else if (sortOption === "priceDesc")
       filtered.sort((a, b) => b.price - a.price);
@@ -122,8 +106,8 @@ export default function CarList() {
       </div>
     );
 
-return (
-  <div style={{ padding: 24, backgroundColor: "#fff" }}>
+  return (
+    <div style={{ padding: 24, backgroundColor: "#fff" }}>
       <h2
         style={{
           fontSize: 30,
@@ -136,7 +120,7 @@ return (
         Danh mục xe điện
       </h2>
 
-      {/* Bộ lọc */}
+      {/* Bộ lọc (Giữ nguyên) */}
       <Space
         direction="vertical"
         size="middle"
@@ -154,8 +138,7 @@ return (
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-
-        <Row gutter={[16, 16]}>
+        {/* <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={8}>
             <label style={{ fontWeight: 600 }}>Sắp xếp theo:</label>
             <Select
@@ -169,22 +152,21 @@ return (
               <Option value="priceDesc">Giá: Cao → Thấp</Option>
             </Select>
           </Col>
-
           <Col xs={24} sm={24} md={8}>
-            <label style={{ fontWeight: 600 }}>Khoảng giá (₫):</label>
+            <label style={{ fontWeight: 600 }}>Khoảng giá ($):</label>
             <Slider
               range
               min={0}
-              max={100000000}
-              step={1000000}
+              max={100000} // Giảm max range
+              step={1000}
               value={priceRange}
               tooltip={{
-                formatter: (v) => v.toLocaleString() + " ₫",
+                formatter: (v) => v.toLocaleString() + " $",
               }}
               onChange={(value) => setPriceRange(value)}
             />
           </Col>
-        </Row>
+        </Row> */}
       </Space>
 
       {/* Danh sách xe */}
@@ -221,8 +203,10 @@ return (
                   }
                 >
                   <h3 style={{ fontSize: "15px" }}>{car.carName}</h3>
-                  <p style={{ color: "#059669", fontWeight: 600 }}>
-                    {car.price.toLocaleString()} ₫
+                  
+                  {/* THAY ĐỔI 5: Logic render giá */}
+                  <p style={{ color: car.price === 0 ? "#d32f2f" : "#059669", fontWeight: 600 }}>
+                    {car.price === 0 ? "LIÊN HỆ" : car.price.toLocaleString() + " $"}
                   </p>
 
                   <div style={{ display: "flex", gap: 6 }}>
@@ -251,6 +235,7 @@ return (
         )}
       </Row>
 
+      {/* Nút so sánh (Giữ nguyên) */}
       <div style={{ textAlign: "center", marginTop: 32 }}>
         <Button
           type="primary"
@@ -262,7 +247,7 @@ return (
         </Button>
       </div>
 
-      {/* Modal Chi tiết xe */}
+      {/* Modal Chi tiết xe (Giữ nguyên) */}
       <Modal
         open={!!detailCar}
         onCancel={() => setDetailCar(null)}
@@ -300,16 +285,9 @@ return (
                 icon={<LeftOutlined />}
                 onClick={() => carouselRef.current.prev()}
                 style={{
-                  position: "absolute",
-                  top: "45%",
-                  left: 10,
-                  zIndex: 2,
-                  color: "#fff",
-                  background: "rgba(0,0,0,0.4)",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: "absolute", top: "45%", left: 10, zIndex: 2,
+                  color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               />
               <Button
@@ -317,16 +295,9 @@ return (
                 icon={<RightOutlined />}
                 onClick={() => carouselRef.current.next()}
                 style={{
-                  position: "absolute",
-                  top: "45%",
-                  right: 10,
-                  zIndex: 2,
-                  color: "#fff",
-                  background: "rgba(0,0,0,0.4)",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: "absolute", top: "45%", right: 10, zIndex: 2,
+                  color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               />
 

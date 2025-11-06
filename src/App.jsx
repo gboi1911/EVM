@@ -24,13 +24,11 @@ const ManageMotorbike = React.lazy(() => import("./pages/EVM/ManageMotor"));
 // Trang quản lý bán hàng
 const QuotationPage = React.lazy(() => import("./pages/sales/QuotationPage"));
 const OrderPage = React.lazy(() => import("./pages/sales/OrderPage"));
-const ContractPage = React.lazy(() => import("./pages/sales/ContractPage"));
-const PromotionPage = React.lazy(() => import("./pages/sales/PromotionPage"));
-const DeliveryTrackingPage = React.lazy(() =>
-  import("./pages/sales/DeliveryTrackingPage")
-);
+// const ContractPage = React.lazy(() => import("./pages/sales/ContractPage"));
+// const PromotionPage = React.lazy(() => import("./pages/sales/PromotionPage"));
+const DeliveryTrackingPage = React.lazy(() => import("./pages/sales/DeliveryTrackingPage"));
 const PaymentPage = React.lazy(() => import("./pages/sales/PaymentPage"));
-const BookingPage = React.lazy(() => import("./pages/sales/BookingPage"));
+// const BookingPage = React.lazy(() => import("./pages/sales/BookingPage"));
 
 // Trang khách hàng
 const CustomerList = React.lazy(() => import("./pages/customers/CustomerList"));
@@ -77,14 +75,14 @@ function App() {
               <Route path="vehicles" element={<CarList />} />
               <Route path="vehicles/compare" element={<CarCompare />} />
 
-              {/* Quản lý bán hàng - khớp Navbar */}
-              <Route path="sales/quotes" element={<QuotationPage />} />
-              <Route path="sales/orders" element={<OrderPage />} />
-              <Route path="sales/contracts" element={<ContractPage />} />
-              <Route path="sales/promotions" element={<PromotionPage />} />
-              <Route path="sales/delivery" element={<DeliveryTrackingPage />} />
-              <Route path="sales/payments" element={<PaymentPage />} />
-              <Route path="sales/booking" element={<BookingPage />} />
+            {/* Quản lý bán hàng - khớp Navbar */}
+            <Route path="sales/quotes" element={<QuotationPage />} />
+            <Route path="sales/orders" element={<OrderPage />} />
+            {/* <Route path="sales/contracts" element={<ContractPage />} />
+            <Route path="sales/promotions" element={<PromotionPage />} /> */}
+            <Route path="sales/delivery" element={<DeliveryTrackingPage />} />
+            <Route path="sales/payments" element={<PaymentPage />} />
+{/* <Route path="sales/booking" element={<BookingPage />} /> */}
 
               {/* Khách hàng */}
               <Route path="customers" element={<CustomerList />} />

@@ -1,50 +1,61 @@
 // src/pages/sales/OrderPage.jsx
 import {
-  Table, Button, Tag, Modal, Spin, message, Space, Popconfirm, Timeline, Row, Col,
-  Form, Input // THÊM MỚI: Thêm Form và Input cho Modal
+  Table, Button, Tag, Modal, Spin, message, Space, Timeline, Row, Col,
+  Tabs, Popconfirm // THAY ĐỔI: Đã xóa Form, Input
 } from "antd";
 import { useEffect, useState } from "react";
 import {
   getListOrders,
   getOrderById,
-  updateOrder, // Dùng 'updateOrder' cho tất cả
-  // cancelOrder, // Bỏ 'cancelOrder'
+  updateOrder,
   getOrderActivities
 } from "../../api/order";
 
-const { TextArea } = Input;
+const { TabPane } = Tabs;
 
 export default function OrderPage() {
-  const [orders, setOrders] = useState([]);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [rejectedOrders, setRejectedOrders] = useState([]);
+  const [cancelledOrders, setCancelledOrders] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("PENDING"); 
+
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(null); // Dùng cho cả 2 modal
+  const [selected, setSelected] = useState(null); 
   const [activities, setActivities] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // THÊM MỚI: State cho Modal "Lý do"
-  const [reasonModalOpen, setReasonModalOpen] = useState(false);
-  const [reasonModalAction, setReasonModalAction] = useState(null); // "CANCELLED" or "REJECTED"
-  const [reasonFormLoading, setReasonFormLoading] = useState(false);
-  const [reasonForm] = Form.useForm();
+  // THAY ĐỔI: Đã xóa state của Modal "Lý do"
 
-  const fetchOrders = async () => {
+  const fetchAllOrders = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await getListOrders({ status: "PENDING" });
-      setOrders(response.data);
+      const [pendingRes, rejectedRes, cancelledRes] = await Promise.all([
+        getListOrders({ status: "PENDING" }),
+        getListOrders({ status: "REJECTED" }),
+        getListOrders({ status: "CANCELLED" }),
+      ]);
+      
+      setPendingOrders(pendingRes.data);
+      setRejectedOrders(rejectedRes.data);
+      setCancelledOrders(cancelledRes.data);
+
     } catch (e) {
-      message.error("Không tải được danh sách đơn");
+      message.error("Không tải được danh sách đơn hàng");
     } finally {
       setLoading(false);
     }
   };
 
-  // Mở Modal xem chi tiết
+  useEffect(() => {
+    fetchAllOrders();
+  }, []);
+
   const openDetail = async (record) => {
     setOpen(true);
     setModalLoading(true);
-    setSelected(record); // Lưu đơn hàng đang chọn
+    setSelected(record); 
     setActivities([]);
 
     try {
@@ -61,111 +72,119 @@ export default function OrderPage() {
     }
   };
 
-  // CẬP NHẬT: Hàm xử lý cập nhật (thêm 'note')
-  const handleUpdateStatus = async (id, newStatus, note = "") => {
+  // THAY ĐỔI: Hàm update đơn giản (không 'note')
+  // Hàm này gọi API PATCH /api/v1/orders/{id}
+  const handleUpdateStatus = async (id, newStatus) => {
     try {
-      // Gửi payload có cả status và note (lý do)
-      const payload = { 
-        status: newStatus, 
-        note: note 
-      };
+      const payload = { status: newStatus }; // Chỉ gửi status
       await updateOrder(id, payload);
       
       message.success(`Đơn hàng #${id} đã được chuyển sang ${newStatus}`);
-      fetchOrders(); // Tải lại danh sách
+      fetchAllOrders(); // Tải lại dữ liệu cho cả 3 tab
     } catch (err) {
       message.error("Cập nhật trạng thái thất bại: " + err.message);
-      // Ném lỗi để onFinish của Form biết
-      throw err; 
     }
   };
 
-  // --- (MỚI) Xử lý Modal "Lý do" ---
-  const openReasonModal = (record, action) => {
-    setSelected(record); // Lưu đơn hàng đang xử lý
-    setReasonModalAction(action); // Lưu hành động (CANCELLED/REJECTED)
-    setReasonModalOpen(true);
-  };
-
-  const handleReasonModalCancel = () => {
-    setReasonModalOpen(false);
-    reasonForm.resetFields();
-    setSelected(null);
-    setReasonModalAction(null);
-  };
-
-  // Khi submit Form Lý do
-  const handleReasonSubmit = async (values) => {
-    const { note } = values;
-    const orderId = selected.id;
-    const newStatus = reasonModalAction;
+  // Hàm render cột (columns)
+  const getColumns = (tabKey) => {
+    // Cột cơ bản
+    const baseColumns = [
+      { title: "Mã đơn", dataIndex: "id" },
+      { title: "Khách hàng", dataIndex: ["customer", "fullName"] },
+      { title: "Tên xe", dataIndex: ["car", "carName"] },
+      {
+        title: "Tổng tiền ($)",
+        dataIndex: "totalAmount",
+        render: (v) => v.toLocaleString(),
+      },
+    ];
     
-    setReasonFormLoading(true);
-    try {
-      // Gọi hàm update đã được cập nhật
-      await handleUpdateStatus(orderId, newStatus, note);
-      handleReasonModalCancel(); // Đóng modal nếu thành công
-    } catch {
-      // Lỗi đã được hiển thị bởi handleUpdateStatus
-    } finally {
-      setReasonFormLoading(false);
-    }
-  };
-  // --- Hết phần xử lý Modal "Lý do" ---
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const columns = [
-    { title: "Mã đơn", dataIndex: "id" },
-    { title: "Khách hàng", dataIndex: ["customer", "fullName"] },
-    { title: "Tên xe", dataIndex: ["car", "carName"] },
-    {
-      title: "Tổng tiền ($)",
-      dataIndex: "totalAmount",
-      render: (v) => v?.toLocaleString(),
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      render: (s) => <Tag color="orange">{s}</Tag>,
-    },
-    {
+    // Cột xem chung
+    const actionColumn = {
       title: "Thao tác",
-      // CẬP NHẬT: Thay Popconfirm bằng Button
       render: (_, record) => (
-        <Space size="small">
-          <Button type="link" onClick={() => openDetail(record)}>
-            Xem
-          </Button>
-          <Button
-            type="link"
-            style={{ color: "green" }}
-            onClick={() => handleUpdateStatus(record.id, "APPROVED")} // Duyệt (không cần lý do)
-          >
-            Duyệt
-          </Button>
-          {/* MỚI: Nút Từ chối */}
-          <Button
-            type="link"
-            danger
-            onClick={() => openReasonModal(record, "REJECTED")}
-          >
-            Từ chối
-          </Button>
-          {/* SỬA: Nút Hủy */}
-          <Button
-            type="link"
-            danger
-            onClick={() => openReasonModal(record, "CANCELLED")}
-          >
-            Hủy
-          </Button>
-        </Space>
+        <Button type="link" onClick={() => openDetail(record)}>
+          Xem
+        </Button>
       ),
-    },
-  ];
+    };
+
+    if (tabKey === "PENDING") {
+      return [
+        ...baseColumns,
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          render: (s) => <Tag color="orange">{s}</Tag>,
+        },
+        {
+          title: "Thao tác",
+          render: (_, record) => (
+            <Space size="small">
+              <Button type="link" onClick={() => openDetail(record)}>
+                Xem
+              </Button>
+              <Button
+                type="link"
+                style={{ color: "green" }}
+                onClick={() => handleUpdateStatus(record.id, "APPROVED")} 
+              >
+                Duyệt
+              </Button>
+              {/* THAY ĐỔI: Xóa 'description' (lý do) */}
+              <Popconfirm
+                title="Bạn chắc chắn muốn TỪ CHỐI?"
+                onConfirm={() => handleUpdateStatus(record.id, "REJECTED")}
+                okText="Đúng, từ chối"
+                cancelText="Không"
+              >
+                <Button type="link" danger>Từ chối</Button>
+              </Popconfirm>
+              {/* THAY ĐỔI: Xóa 'description' (lý do) */}
+              <Popconfirm
+                title="Bạn chắc chắn muốn HỦY?"
+                onConfirm={() => handleUpdateStatus(record.id, "CANCELLED")}
+                okText="Đúng, hủy"
+                cancelText="Không"
+              >
+                <Button type="link" danger>Hủy</Button>
+              </Popconfirm>
+            </Space>
+          ),
+        },
+      ];
+    }
+    
+    if (tabKey === "REJECTED") {
+      return [
+        ...baseColumns,
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          render: (s) => <Tag color="red">{s}</Tag>,
+        },
+        // THAY ĐỔI: Đã xóa cột "Ghi chú"
+        actionColumn,
+      ];
+    }
+
+    if (tabKey === "CANCELLED") {
+      return [
+        ...baseColumns,
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          render: (s) => <Tag color="gray">{s}</Tag>,
+        },
+        // THAY ĐỔI: Đã xóa cột "Ghi chú"
+        actionColumn,
+      ];
+    }
+    
+    return baseColumns;
+  };
+
 
   return (
     <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
@@ -180,23 +199,47 @@ export default function OrderPage() {
       >
         <h2
           style={{
-            fontSize: 25,
-          fontWeight: 700,
+            fontWeight: 700,
             color: "#059669",
             textAlign: "center",
             marginBottom: 24,
           }}
         >
-          Quản lý đơn hàng (Chờ duyệt)
+          Quản lý đơn hàng
         </h2>
 
-        {loading ? (
-          <Spin style={{ display: "block", margin: "auto" }} />
-        ) : (
-          <Table columns={columns} dataSource={orders} rowKey="id" />
-        )}
+        {/* Tabs */}
+        <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
+          <TabPane tab={`Chờ duyệt (${pendingOrders.length})`} key="PENDING">
+            <Spin spinning={loading}>
+              <Table 
+                columns={getColumns("PENDING")} 
+                dataSource={pendingOrders} 
+                rowKey="id" 
+              />
+            </Spin>
+          </TabPane>
+          <TabPane tab={`Bị từ chối (${rejectedOrders.length})`} key="REJECTED">
+            <Spin spinning={loading}>
+              <Table 
+                columns={getColumns("REJECTED")} 
+                dataSource={rejectedOrders} 
+                rowKey="id" 
+              />
+            </Spin>
+          </TabPane>
+          <TabPane tab={`Đã hủy (${cancelledOrders.length})`} key="CANCELLED">
+            <Spin spinning={loading}>
+              <Table 
+                columns={getColumns("CANCELLED")} 
+                dataSource={cancelledOrders} 
+                rowKey="id" 
+              />
+            </Spin>
+          </TabPane>
+        </Tabs>
 
-        {/* Modal Xem Chi Tiết (Không thay đổi) */}
+        {/* Modal Xem Chi Tiết */}
         <Modal
           open={open}
           onCancel={() => setOpen(false)}
@@ -215,6 +258,7 @@ export default function OrderPage() {
                 <p><b>Nhân viên phụ trách:</b> {selected?.staff.fullName}</p>
                 <p><b>Tổng tiền:</b> {selected?.totalAmount?.toLocaleString()} $</p>
                 <p><b>Trạng thái:</b> <Tag color="orange">{selected?.status}</Tag></p>
+                {/* THAY ĐỔI: Đã xóa dòng Ghi chú */}
               </Col>
               <Col span={12}>
                 <h4>Lịch sử đơn hàng</h4>
@@ -229,45 +273,7 @@ export default function OrderPage() {
           )}
         </Modal>
         
-        {/* THÊM MỚI: Modal Nhập Lý do */}
-        <Modal
-          title={reasonModalAction === "CANCELLED" ? "Lý do Hủy đơn" : "Lý do Từ chối"}
-          open={reasonModalOpen}
-          onCancel={handleReasonModalCancel}
-          // Gắn nút OK của Modal vào Form
-          footer={[
-            <Button key="back" onClick={handleReasonModalCancel}>
-              Đóng
-            </Button>,
-            <Button 
-              key="submit" 
-              type="primary" 
-              danger 
-              loading={reasonFormLoading}
-              onClick={() => reasonForm.submit()} // Kích hoạt onFinish
-            >
-              Xác nhận
-            </Button>,
-          ]}
-        >
-          <Form
-            form={reasonForm}
-            layout="vertical"
-            onFinish={handleReasonSubmit}
-          >
-            <p>Bạn đang {reasonModalAction === "CANCELLED" ? "Hủy" : "Từ chối"} đơn hàng <b>#{selected?.id}</b>.</p>
-            <Form.Item
-              name="note"
-              label="Lý do (Bắt buộc)"
-              rules={[{ required: true, message: "Vui lòng nhập lý do!" }]}
-            >
-              <TextArea 
-                rows={4} 
-                placeholder="Ví dụ: Khách hàng đổi ý, hết xe trong kho..." 
-              />
-            </Form.Item>
-          </Form>
-        </Modal>
+        {/* THAY ĐỔI: Đã xóa Modal "Lý do" */}
 
       </div>
     </div>
