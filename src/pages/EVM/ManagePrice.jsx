@@ -56,16 +56,28 @@ export default function ManagePrice() {
   const openModal = async (record = null) => {
     setEditing(record);
     setModalOpen(true);
+
     if (record) {
       const details = await getPriceDetailsById(record.priceProgramId);
       form.setFieldsValue({
         dealerHierarchy: details.dealerHierarchy,
-        startDate: moment(details.startDate),
-        endDate: moment(details.endDate),
-        programDetails: details.programDetails,
+        startDate: moment(details.startDay),
+        endDate: moment(details.endDay),
       });
     } else {
-      form.resetFields();
+      // default new
+      const now8am = moment().set({
+        hour: 7,
+        minute: 0,
+        second: 0,
+        millisecond: 0,
+      });
+
+      form.setFieldsValue({
+        dealerHierarchy: null,
+        startDate: now8am,
+        endDate: now8am.clone().add(30, "days"), // auto end 30 ngày sau
+      });
     }
   };
 
@@ -74,8 +86,8 @@ export default function ManagePrice() {
       const values = await form.validateFields();
       setLoading(true);
 
-      const startDay = values.startDate.format("YYYY-MM-DDTHH:mm:ss");
-      const endDay = values.endDate.format("YYYY-MM-DDTHH:mm:ss");
+      const startDay = values.startDate.format("YYYY-MM-DDTHH:mm:ssZ");
+      const endDay = values.endDate.format("YYYY-MM-DDTHH:mm:ssZ");
 
       const requestBody = {
         dealerHierarchy: values.dealerHierarchy,
@@ -98,6 +110,7 @@ export default function ManagePrice() {
         setData((prev) => [...prev, added]);
         notification.success({ message: "Thêm mới thành công!" });
       }
+
       setModalOpen(false);
       setEditing(null);
     } finally {
@@ -125,8 +138,18 @@ export default function ManagePrice() {
       dataIndex: "dealerHierarchy",
       key: "dealerHierarchy",
     },
-    { title: "Ngày bắt đầu", dataIndex: "startDate", key: "startDate" },
-    { title: "Ngày kết thúc", dataIndex: "endDate", key: "endDate" },
+    {
+      title: "Ngày bắt đầu",
+      dataIndex: "startDate",
+      key: "startDate",
+      render: (text) => moment(text).utcOffset(7).format("DD/MM/YYYY HH:mm"),
+    },
+    {
+      title: "Ngày kết thúc",
+      dataIndex: "endDate",
+      key: "endDate",
+      render: (text) => moment(text).utcOffset(7).format("DD/MM/YYYY HH:mm"),
+    },
     {
       title: "Thao tác",
       key: "action",
