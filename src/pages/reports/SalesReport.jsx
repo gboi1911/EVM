@@ -55,7 +55,8 @@ export default function SalesReport() {
       >
         <h2
           style={{
-            fontWeight: 700,
+            fontSize: 25,
+          fontWeight: 700,
             color: "#059669",
             textAlign: "center",
             marginBottom: 24,
