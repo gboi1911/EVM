@@ -25,7 +25,11 @@ import {
   getBookingsForSlot,
   cancelBooking,
 } from "../../api/testDrive";
-import { EyeOutlined, UserDeleteOutlined, LockOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  UserDeleteOutlined,
+  LockOutlined,
+} from "@ant-design/icons";
 
 const { Text, Title } = Typography;
 
@@ -131,20 +135,20 @@ export default function TestDriveSchedule() {
   };
 
   return (
-    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+    <div style={{ backgroundColor: "#fff", minHeight: "100vh", padding: 40 }}>
       <div
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          background: "#fff",
+          background: "#f3f0f0ff",
           borderRadius: 12,
           padding: 24,
         }}
       >
         <h2
           style={{
-              fontSize: 25,
-          fontWeight: 700,
+            fontSize: 25,
+            fontWeight: 700,
             color: "#059669",
             textAlign: "center",
             marginBottom: 24,
@@ -163,7 +167,9 @@ export default function TestDriveSchedule() {
                     hoverable={!isFull}
                     style={{
                       borderRadius: 12,
-                      border: isFull ? "1px solid #ff4d4f" : "1px solid #e5e7eb",
+                      border: isFull
+                        ? "1px solid #ff4d4f"
+                        : "1px solid #e5e7eb",
                       background: isFull ? "#fff5f5" : "#ffffff",
                       transition: "all 0.25s ease",
                     }}
@@ -172,18 +178,23 @@ export default function TestDriveSchedule() {
                       {slot.carName}
                     </Title>
                     <Text type="secondary" style={{ display: "block" }}>
-                      {formatDateTime(slot.startTime)} — {formatDateTime(slot.endTime)}
+                      {formatDateTime(slot.startTime)} —{" "}
+                      {formatDateTime(slot.endTime)}
                     </Text>
 
                     <div style={{ marginTop: 12 }}>
                       <Tag color={isFull ? "red" : "green"}>
-                        {isFull ? "Đã đầy" : "Còn chỗ"} ({slot.bookedCount}/{slot.amount})
+                        {isFull ? "Đã đầy" : "Còn chỗ"} ({slot.bookedCount}/
+                        {slot.amount})
                       </Tag>
                     </div>
 
                     <Space style={{ marginTop: 16 }}>
                       {!isFull ? (
-                        <Button type="primary" onClick={() => openBookingModal(slot)}>
+                        <Button
+                          type="primary"
+                          onClick={() => openBookingModal(slot)}
+                        >
                           Đặt lịch
                         </Button>
                       ) : (
@@ -192,7 +203,10 @@ export default function TestDriveSchedule() {
                         </Button>
                       )}
 
-                      <Button icon={<EyeOutlined />} onClick={() => openManageModal(slot)}>
+                      <Button
+                        icon={<EyeOutlined />}
+                        onClick={() => openManageModal(slot)}
+                      >
                         Xem
                       </Button>
                     </Space>
@@ -213,14 +227,18 @@ export default function TestDriveSchedule() {
           <Button key="cancel" onClick={handleBookingModalCancel}>
             Hủy
           </Button>,
-          <Button key="submit" type="primary" loading={formLoading} onClick={() => form.submit()}>
+          <Button
+            key="submit"
+            type="primary"
+            loading={formLoading}
+            onClick={() => form.submit()}
+          >
             Xác nhận đặt
           </Button>,
         ]}
       >
         <p>
-          Thời gian:{" "}
-          <b>{formatDateTime(selectedSlot?.startTime)}</b> —{" "}
+          Thời gian: <b>{formatDateTime(selectedSlot?.startTime)}</b> —{" "}
           <b>{formatDateTime(selectedSlot?.endTime)}</b>
         </p>
         <Form form={form} layout="vertical" onFinish={handleBooking}>

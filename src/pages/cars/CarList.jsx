@@ -1,12 +1,30 @@
 // src/pages/vehicles/CarList.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import {
-  Tag, Card, Button, Row, Col, Image, Modal, Input,
-  Select, Slider, Space, Spin, Carousel, message,
+  Tag,
+  Card,
+  Button,
+  Row,
+  Col,
+  Image,
+  Modal,
+  Input,
+  Select,
+  Slider,
+  Space,
+  Spin,
+  Carousel,
+  message,
 } from "antd";
 import {
-  DollarOutlined, SettingOutlined, ThunderboltOutlined, CarOutlined,
-  BgColorsOutlined, SearchOutlined, LeftOutlined, RightOutlined,
+  DollarOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
+  CarOutlined,
+  BgColorsOutlined,
+  SearchOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 // THAY ĐỔI 1: Import hàm API chuẩn, xóa axios
@@ -83,11 +101,13 @@ export default function CarList() {
       const matchesSearch = car.carName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
-        
+
       // THAY ĐỔI 4: Logic lọc giá
       // Nếu giá là 0 (LIÊN HỆ), luôn hiển thị
-      const matchesPrice = car.price === 0 || (car.price >= priceRange[0] && car.price <= priceRange[1]);
-        
+      const matchesPrice =
+        car.price === 0 ||
+        (car.price >= priceRange[0] && car.price <= priceRange[1]);
+
       return matchesSearch && matchesPrice;
     });
 
@@ -101,7 +121,9 @@ export default function CarList() {
 
   if (loading)
     return (
-      <div style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}>
+      <div
+        style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}
+      >
         <Spin tip="Đang tải danh sách xe..." />
       </div>
     );
@@ -203,10 +225,17 @@ export default function CarList() {
                   }
                 >
                   <h3 style={{ fontSize: "15px" }}>{car.carName}</h3>
-                  
+
                   {/* THAY ĐỔI 5: Logic render giá */}
-                  <p style={{ color: car.price === 0 ? "#d32f2f" : "#059669", fontWeight: 600 }}>
-                    {car.price === 0 ? "LIÊN HỆ" : car.price.toLocaleString() + " $"}
+                  <p
+                    style={{
+                      color: car.price === 0 ? "#d32f2f" : "#059669",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {car.price === 0
+                      ? "LIÊN HỆ"
+                      : car.price.toLocaleString() + " $"}
                   </p>
 
                   <div style={{ display: "flex", gap: 6 }}>
@@ -285,9 +314,16 @@ export default function CarList() {
                 icon={<LeftOutlined />}
                 onClick={() => carouselRef.current.prev()}
                 style={{
-                  position: "absolute", top: "45%", left: 10, zIndex: 2,
-                  color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "absolute",
+                  top: "45%",
+                  left: 10,
+                  zIndex: 2,
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               />
               <Button
@@ -295,9 +331,16 @@ export default function CarList() {
                 icon={<RightOutlined />}
                 onClick={() => carouselRef.current.next()}
                 style={{
-                  position: "absolute", top: "45%", right: 10, zIndex: 2,
-                  color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "absolute",
+                  top: "45%",
+                  right: 10,
+                  zIndex: 2,
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               />
 
@@ -310,8 +353,7 @@ export default function CarList() {
                 {detailCar.performanceDetailGetDto?.rangeMiles} miles
               </p>
               <p>
-                <BgColorsOutlined /> Màu:{" "}
-                {detailCar.color?.colorName || "N/A"}
+                <BgColorsOutlined /> Màu: {detailCar.color?.colorName || "N/A"}
               </p>
             </div>
           )
