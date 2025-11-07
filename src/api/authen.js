@@ -31,7 +31,7 @@ export const login = async (username, password) => {
 
 export const createAccount = async (accountData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/auth/register`, {
+  const response = await fetch(`${API_BASE}/user/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -9,6 +9,7 @@ import {
   Table,
   Space,
   Tag,
+  Modal,
 } from "antd";
 import {
   createAccount,
@@ -20,6 +21,7 @@ import {
   ReloadOutlined,
   LockOutlined,
   UnlockOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { App as AntdApp } from "antd";
 
@@ -27,26 +29,26 @@ const roleOptions = [
   { label: "Đại lý", value: "DEALER_MANAGER" },
   { label: "Nhân viên đại lý", value: "DEALER_STAFF" },
   { label: "Nhân viên công ty", value: "EVM_STAFF" },
+  { label: "Admin công ty", value: "EVM_ADMIN" },
 ];
 
 export default function ManageAccount() {
   const [form] = Form.useForm();
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);
   const { notification } = AntdApp.useApp();
 
-  // Load accounts from API
+  // Load accounts
   const loadAccounts = async () => {
     setTableLoading(true);
     try {
-      const data = await getAllAccounts(0, 10);
+      const data = await getAllAccounts(0, 100);
       setAccounts(data.userInfoGetDtos || []);
     } catch (err) {
       notification.error({
         message: "Tải danh sách tài khoản thất bại!",
-        description: "Không thể lấy danh sách người dùng, vui lòng thử lại.",
-        placement: "topRight",
       });
     } finally {
       setTableLoading(false);
@@ -60,19 +62,23 @@ export default function ManageAccount() {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await createAccount(values);
+      const payload = { ...values };
+
+      if (payload.role !== "DEALER_STAFF") {
+        delete payload.parentPhone;
+      }
+
+      await createAccount(payload);
       notification.success({
         message: "Tạo tài khoản thành công!",
-        description: `Tài khoản ${values.username} đã được tạo.`,
-        placement: "topRight",
       });
+
+      loadAccounts();
       form.resetFields();
-      loadAccounts(); // refresh list
+      setModalOpen(false);
     } catch (error) {
       notification.error({
         message: "Tạo tài khoản thất bại!",
-        description: "Vui lòng kiểm tra lại thông tin hoặc thử lại sau.",
-        placement: "topRight",
       });
     } finally {
       setLoading(false);
@@ -80,64 +86,38 @@ export default function ManageAccount() {
   };
 
   const handleBanAccount = async (userId) => {
-    try {
-      await banAccount(userId);
-      notification.success({
-        message: "Vô hiệu hóa tài khoản thành công",
-        placement: "topRight",
-      });
-      loadAccounts(); // Refresh list
-    } catch (err) {
-      notification.error({
-        message: "Vô hiệu hóa tài khoản thất bại",
-        description: err.message,
-        placement: "topRight",
-      });
-    }
+    await banAccount(userId);
+    loadAccounts();
+    notification.success({ message: "Vô hiệu hóa tài khoản thành công" });
   };
 
   const handleUnbanAccount = async (userId) => {
-    try {
-      await unbanAccount(userId);
-      notification.success({
-        message: "Kích hoạt tài khoản thành công",
-        placement: "topRight",
-      });
-      loadAccounts(); // Refresh list
-    } catch (err) {
-      notification.error({
-        message: "Kích hoạt tài khoản thất bại",
-        description: err.message,
-        placement: "topRight",
-      });
-    }
+    await unbanAccount(userId);
+    loadAccounts();
+    notification.success({ message: "Kích hoạt tài khoản thành công" });
   };
 
   const columns = [
     { title: "Tên đăng nhập", dataIndex: "username", key: "username" },
     { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
     { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Số điện thoại", dataIndex: "phone", key: "phone" },
+    { title: "SĐT cá nhân", dataIndex: "phone", key: "phone" },
     {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
-      filters: [
-        { text: "Đại lý (Dealer Manager)", value: "DEALER_MANAGER" },
-        { text: "Nhân viên đại lý (Dealer Staff)", value: "DEALER_STAFF" },
-        { text: "Nhân viên công ty (EVM Staff)", value: "EVM_STAFF" },
-      ],
-      onFilter: (value, record) => record.role === value,
       render: (role) => {
         const colorMap = {
           DEALER_MANAGER: "green",
           DEALER_STAFF: "blue",
           EVM_STAFF: "volcano",
+          EVM_ADMIN: "purple",
         };
         const textMap = {
           DEALER_MANAGER: "Đại lý",
           DEALER_STAFF: "Nhân viên đại lý",
           EVM_STAFF: "Nhân viên công ty",
+          EVM_ADMIN: "Admin công ty",
         };
         return <Tag color={colorMap[role]}>{textMap[role]}</Tag>;
       },
@@ -182,82 +162,7 @@ export default function ManageAccount() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col p-8">
-      <Card className="flex-1 w-full shadow-md border border-gray-200">
-        <h2 className="text-2xl font-bold text-emerald-700 mb-6 text-center">
-          Tạo tài khoản người dùng
-        </h2>
-        <Form
-          layout="vertical"
-          onFinish={onFinish}
-          initialValues={{ isActive: true, role: "DEALER_MANAGER" }}
-        >
-          <Form.Item
-            label="Tên đăng nhập"
-            name="username"
-            rules={[
-              { required: true, message: "Vui lòng nhập tên đăng nhập!" },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Mật khẩu"
-            name="password"
-            rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
-          >
-            <Input.Password />
-          </Form.Item>
-          <Form.Item
-            label="Họ và tên"
-            name="fullName"
-            rules={[{ required: true, message: "Vui lòng nhập họ và tên!" }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: "Vui lòng nhập email!" },
-              { type: "email", message: "Email không hợp lệ!" },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Số điện thoại"
-            name="phone"
-            rules={[
-              { required: true, message: "Vui lòng nhập số điện thoại!" },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Vai trò"
-            name="role"
-            rules={[{ required: true, message: "Vui lòng chọn vai trò!" }]}
-          >
-            <Select options={roleOptions} />
-          </Form.Item>
-          <Form.Item name="isActive" valuePropName="checked" label="Trạng thái">
-            <Checkbox>Hoạt động</Checkbox>
-          </Form.Item>
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-            >
-              Tạo tài khoản
-            </Button>
-          </Form.Item>
-        </Form>
-      </Card>
-
-      {/* ACCOUNTS TABLE */}
+    <div className="min-h-screen bg-gray-50 flex flex-col p-8 gap-8">
       <Card
         className="w-full max-w-6xl mx-auto shadow"
         title={
@@ -265,13 +170,23 @@ export default function ManageAccount() {
             <span className="text-emerald-700 font-semibold">
               Danh sách tài khoản
             </span>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={loadAccounts}
-              className="text-emerald-700 border-emerald-700"
-            >
-              Tải lại
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadAccounts}
+                className="text-emerald-700 border-emerald-700"
+              >
+                Tải lại
+              </Button>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => setModalOpen(true)}
+              >
+                Tạo tài khoản
+              </Button>
+            </div>
           </div>
         }
       >
@@ -280,9 +195,93 @@ export default function ManageAccount() {
           dataSource={accounts}
           rowKey="username"
           loading={tableLoading}
-          pagination={false}
+          pagination={{ pageSize: 8 }}
         />
       </Card>
+
+      <Modal
+        title="Tạo tài khoản người dùng"
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        onOk={() => form.submit()}
+        okText="Tạo"
+        confirmLoading={loading}
+      >
+        <Form
+          layout="vertical"
+          form={form}
+          onFinish={onFinish}
+          initialValues={{ isActive: true }}
+        >
+          <Form.Item
+            label="Tên đăng nhập"
+            name="username"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Mật khẩu"
+            name="password"
+            rules={[{ required: true }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            label="Họ và tên"
+            name="fullName"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ required: true }, { type: "email" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="SĐT cá nhân"
+            name="phone"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item label="Thành phố" name="city" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="Vai trò" name="role" rules={[{ required: true }]}>
+            <Select options={roleOptions} />
+          </Form.Item>
+
+          <Form.Item
+            shouldUpdate={(prev, cur) => prev.role !== cur.role}
+            noStyle
+          >
+            {({ getFieldValue }) =>
+              getFieldValue("role") === "DEALER_STAFF" ? (
+                <Form.Item
+                  label="SĐT cấp trên (parentPhone)"
+                  name="parentPhone"
+                  rules={[{ required: true }]}
+                >
+                  <Input placeholder="Số điện thoại Dealer Manager" />
+                </Form.Item>
+              ) : null
+            }
+          </Form.Item>
+
+          <Form.Item name="level" label="Level" rules={[{ required: true }]}>
+            <Input type="number" placeholder="VD: 0" />
+          </Form.Item>
+
+          <Form.Item name="isActive" valuePropName="checked" label="Trạng thái">
+            <Checkbox>Hoạt động</Checkbox>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
