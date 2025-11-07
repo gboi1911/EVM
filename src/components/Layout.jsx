@@ -9,7 +9,10 @@ const MainLayout = () => {
 
   // Choose navbar based on path
   let NavbarComponent = Navbar;
-  if (location.pathname.startsWith("/homeEVM")) {
+  if (
+    location.pathname.startsWith("/homeEVM") ||
+    location.pathname.startsWith("/evm/")
+  ) {
     NavbarComponent = NavbarEVM;
   }
 
