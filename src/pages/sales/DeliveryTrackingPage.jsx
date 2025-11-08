@@ -6,15 +6,13 @@ import {
 import { 
   CarOutlined, UserOutlined, DollarOutlined, CheckCircleOutlined,
   FileTextOutlined, TruckOutlined, HomeOutlined, SmileOutlined, PlusOutlined,
-  ArrowRightOutlined // Thêm
+  ArrowRightOutlined
 } from "@ant-design/icons";
-
-// THAY ĐỔI 1: Import 3 hàm API
 import { getListOrders, addPaymentToOrder, updateOrder } from "../../api/order";
 
 const { Step } = Steps;
 
-// Các bước trong timeline (Không thay đổi)
+// Timeline các bước giao xe
 const deliverySteps = [
   { title: "Đã tạo đơn", description: "Đơn hàng được tạo", icon: <FileTextOutlined />, status: "PENDING" },
   { title: "Đã duyệt", description: "Đã phê duyệt", icon: <CheckCircleOutlined />, status: "APPROVED" },
@@ -23,7 +21,7 @@ const deliverySteps = [
   { title: "Hoàn tất", description: "Đơn hàng hoàn tất", icon: <SmileOutlined />, status: "COMPLETED" }
 ];
 
-// Từ điển dịch paymentStatus (Không thay đổi)
+// Payment status map
 const paymentStatusMap = {
   PENDING: { color: "#ef4444", text: "Chưa thanh toán" },
   DEPOSIT_PAID: { color: "#f59e0b", text: "Đã cọc" },
@@ -31,7 +29,7 @@ const paymentStatusMap = {
   PAID: { color: "#10b981", text: "Đã thanh toán đủ" },
 };
 
-// Từ điển dịch order status (Không thay đổi)
+// Order status map
 const orderStatusMap = {
   PENDING: { text: "Đã tạo đơn", color: "#6b7280" },
   APPROVED: { text: "Đã duyệt", color: "#3b82f6" },
@@ -40,29 +38,27 @@ const orderStatusMap = {
   COMPLETED: { text: "Hoàn tất", color: "#059669" }
 };
 
-// THAY ĐỔI 2: Tạo map cho các hành động (nút)
+// Hành động tiếp theo dựa theo trạng thái
 const nextStepMap = {
-  // Khi status là PENDING, hành động tiếp theo là APPROVED
   PENDING: { next: "APPROVED", text: "Duyệt đơn", icon: <CheckCircleOutlined /> },
   APPROVED: { next: "IN_DELIVERY", text: "Bắt đầu Giao hàng", icon: <TruckOutlined /> },
   IN_DELIVERY: { next: "DELIVERED", text: "Xác nhận Đã giao", icon: <HomeOutlined /> },
   DELIVERED: { next: "COMPLETED", text: "Hoàn tất đơn", icon: <SmileOutlined /> },
-  COMPLETED: null, // Không có bước tiếp theo
+  COMPLETED: null
 };
-
 
 export default function DeliveryTrackingPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  
+
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentFormLoading, setPaymentFormLoading] = useState(false);
   const [paymentForm] = Form.useForm();
-  
-  // THÊM MỚI: Loading cho nút Cập nhật trạng thái
+
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
-  
+
+  // Lấy tất cả đơn hàng
   const fetchAllOrders = async () => {
     try {
       setLoading(true);
@@ -77,7 +73,6 @@ export default function DeliveryTrackingPage() {
       const sortedOrders = allOrders.sort((a, b) => a.id - b.id);
       setOrders(sortedOrders);
 
-      // Cập nhật lại selectedOrder (Rất quan trọng)
       if (selectedOrder) {
         const updatedSelected = sortedOrders.find(o => o.id === selectedOrder.id);
         setSelectedOrder(updatedSelected);
@@ -101,12 +96,8 @@ export default function DeliveryTrackingPage() {
     return stepIndex >= 0 ? stepIndex : 0;
   };
 
-  // Xử lý submit Modal thanh toán
   const handlePaymentSubmit = async (values) => {
-    const payload = {
-      amount: values.amount,
-      type: values.type,
-    };
+    const payload = { amount: values.amount, type: values.type };
     
     try {
       setPaymentFormLoading(true);
@@ -114,7 +105,7 @@ export default function DeliveryTrackingPage() {
       message.success("Ghi nhận thanh toán thành công!");
       setPaymentModalOpen(false);
       paymentForm.resetFields();
-      await fetchAllOrders(); // Tải lại toàn bộ dữ liệu
+      await fetchAllOrders();
     } catch (err) {
       message.error("Ghi nhận thanh toán thất bại: " + err.message);
     } finally {
@@ -122,13 +113,12 @@ export default function DeliveryTrackingPage() {
     }
   };
   
-  // THÊM MỚI: Xử lý Cập nhật trạng thái (Dùng API PATCH)
   const handleUpdateStatus = async (orderId, newStatus) => {
     setStatusUpdateLoading(true);
     try {
       await updateOrder(orderId, { status: newStatus });
       message.success(`Đã cập nhật trạng thái sang: ${newStatus}`);
-      await fetchAllOrders(); // Tải lại toàn bộ dữ liệu
+      await fetchAllOrders();
     } catch (err) {
       message.error("Cập nhật trạng thái thất bại: " + err.message);
     } finally {
@@ -136,8 +126,7 @@ export default function DeliveryTrackingPage() {
     }
   };
 
-
-  // Component OrderListItem (Không thay đổi)
+  // Component Item List
   const OrderListItem = ({ order, isSelected, onClick }) => {
     const img = order.car?.carImages?.[0]?.fileUrl;
     const statusInfo = orderStatusMap[order.status] || { text: order.status, color: "#6b7280" };
@@ -179,7 +168,7 @@ export default function DeliveryTrackingPage() {
     );
   };
 
-  // Component OrderDetailView (Cập nhật)
+  // Component Detail
   const OrderDetailView = ({ order }) => {
     if (!order) {
       return (
@@ -192,11 +181,15 @@ export default function DeliveryTrackingPage() {
     const img = order.car?.carImages?.[0]?.fileUrl;
     const payInfo = paymentStatusMap[order.paymentStatus] || { text: order.paymentStatus, color: "#6b7280" };
     const paymentPercent = (order.totalAmount > 0) ? ((order.amountPaid / order.totalAmount) * 100).toFixed(0) : 0;
+
+    // 🔹 Fix màu thanh khi 100%
+    let progressColor = payInfo.color;
+    if (paymentPercent >= 100) progressColor = "#10b981";
+
     const currentStep = getCurrentStep(order.status);
     const statusInfo = orderStatusMap[order.status] || { text: order.status, color: "#6b7280" };
-    const isFullyPaid = payInfo.text === "Đã thanh toán đủ";
+    const isFullyPaid = paymentPercent >= 100;
 
-    // THAY ĐỔI 3: Lấy thông tin cho nút hành động
     const nextAction = nextStepMap[order.status];
 
     return (
@@ -241,7 +234,7 @@ export default function DeliveryTrackingPage() {
               <Button
                 type="primary" icon={<PlusOutlined />} size="small"
                 onClick={() => setPaymentModalOpen(true)}
-                disabled={isFullyPaid || order.status === 'COMPLETED'} // Không cho thêm TT nếu đã đủ hoặc đã hoàn tất
+                disabled={isFullyPaid || order.status === 'COMPLETED'}
               >
                 Ghi nhận
               </Button>
@@ -252,13 +245,14 @@ export default function DeliveryTrackingPage() {
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ color: "#6b7280" }}>Tiến độ thanh toán</span>
-              <span style={{ fontWeight: 600, color: payInfo.color }}>{paymentPercent}%</span>
+              <span style={{ fontWeight: 600, color: progressColor }}>{paymentPercent}%</span>
             </div>
             <div style={{ height: 6, background: "#e5e7eb", borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
               <div
                 style={{
                   height: "100%", width: `${paymentPercent}%`,
-                  background: payInfo.color, transition: "width 0.3s",
+                  background: progressColor,
+                  transition: "width 0.3s",
                 }}
               />
             </div>
@@ -267,17 +261,14 @@ export default function DeliveryTrackingPage() {
               <span style={{ color: "#9ca3af" }}>/ ${order.totalAmount.toLocaleString()}</span>
             </div>
           </div>
-          <Tag style={{ fontSize: 12, border: "none", borderRadius: 4, padding: "4px 8px" }} color={payInfo.color}>
+          <Tag style={{ fontSize: 12, border: "none", borderRadius: 4, padding: "4px 8px" }} color={progressColor}>
             {payInfo.text}
           </Tag>
         </Card>
 
-        {/* THAY ĐỔI 4: Thẻ Hành động (Actions) */}
-        {nextAction && ( // Chỉ hiển thị nếu có hành động tiếp theo
-          <Card
-            title="Hành động"
-            size="small"
-          >
+        {/* Actions */}
+        {nextAction && (
+          <Card title="Hành động" size="small">
             <p>Đơn hàng đang ở trạng thái: <b>{statusInfo.text}</b>.</p>
             <Button
               type="primary"
@@ -294,7 +285,6 @@ export default function DeliveryTrackingPage() {
     );
   };
 
-  // Component Trang chính
   return (
     <div style={{ backgroundColor: "#f3f4f6", minHeight: "100vh", padding: "24px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
@@ -323,7 +313,6 @@ export default function DeliveryTrackingPage() {
           </div>
         ) : (
           <div style={{ display: "flex", gap: 24 }}>
-            {/* Order List */}
             <div style={{ width: 320 }}>
               <Card title={`Đơn hàng (${orders.length})`} style={{ borderRadius: 12 }}>
                 <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
@@ -339,7 +328,6 @@ export default function DeliveryTrackingPage() {
               </Card>
             </div>
 
-            {/* Order Detail */}
             <div style={{ flex: 1 }}>
               <OrderDetailView order={selectedOrder} />
             </div>
@@ -347,7 +335,7 @@ export default function DeliveryTrackingPage() {
         )}
       </div>
 
-      {/* Modal Ghi nhận thanh toán (Giữ nguyên) */}
+      {/* Modal Ghi nhận thanh toán */}
       <Modal
         title={`Ghi nhận thanh toán cho Đơn #${selectedOrder?.id}`}
         open={paymentModalOpen}

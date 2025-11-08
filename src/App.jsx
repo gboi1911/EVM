@@ -26,6 +26,9 @@ const OrderPage = React.lazy(() => import("./pages/sales/OrderPage"));
 const DeliveryTrackingPage = React.lazy(() => import("./pages/sales/DeliveryTrackingPage"));
 const PaymentPage = React.lazy(() => import("./pages/sales/PaymentPage"));
 const CustomerList = React.lazy(() => import("./pages/customers/CustomerList"));
+const ManagerTestDrive = React.lazy(() =>
+  import("./pages/customers/ManagerTestDrive")
+);
 const TestDriveSchedule = React.lazy(() =>
   import("./pages/customers/TestDriveSchedule")
 );
@@ -74,6 +77,10 @@ function App() {
 
             {/* Khách hàng */}
             <Route path="customers" element={<CustomerList />} />
+           <Route
+              path="customers/test-drive/create"
+              element={<ManagerTestDrive />} 
+            />
             <Route
               path="customers/test-drive"
               element={<TestDriveSchedule />}
