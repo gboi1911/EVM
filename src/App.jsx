@@ -1,16 +1,9 @@
-
 import { useState } from "react";
 import "./App.css";
 import React, { Suspense } from "react";
-import {
-
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/Layout";
-import { App as AntdApp } from "antd"; 
-
+import { App as AntdApp } from "antd";
 
 const Home = React.lazy(() => import("./pages/HomeDealer"));
 const HomeEVM = React.lazy(() => import("./pages/HomeEVM"));
@@ -18,12 +11,15 @@ const Login = React.lazy(() => import("./pages/Login"));
 const ManageAccount = React.lazy(() => import("./pages/EVM/ManageAccount"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 const CarList = React.lazy(() => import("./pages/cars/CarList"));
+const PriceList = React.lazy(() => import("./pages/sales/PriceList"));
 const CarCompare = React.lazy(() => import("./pages/cars/CarCompare"));
 const ManageCar = React.lazy(() => import("./pages/EVM/ManageCar"));
 const ManageMotorbike = React.lazy(() => import("./pages/EVM/ManageMotor"));
 const QuotationPage = React.lazy(() => import("./pages/sales/QuotationPage"));
 const OrderPage = React.lazy(() => import("./pages/sales/OrderPage"));
-const DeliveryTrackingPage = React.lazy(() => import("./pages/sales/DeliveryTrackingPage"));
+const DeliveryTrackingPage = React.lazy(() =>
+  import("./pages/sales/DeliveryTrackingPage")
+);
 const PaymentPage = React.lazy(() => import("./pages/sales/PaymentPage"));
 const CustomerList = React.lazy(() => import("./pages/customers/CustomerList"));
 const ManagerTestDrive = React.lazy(() =>
@@ -47,11 +43,9 @@ const ManageSalesReport = React.lazy(() =>
   import("./pages/EVM/SalesByAreaAndDealer")
 );
 
-
 function App() {
   return (
     <AntdApp>
-
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
           {/* Public routes */}
@@ -74,21 +68,19 @@ function App() {
             <Route path="sales/orders" element={<OrderPage />} />
             <Route path="sales/delivery" element={<DeliveryTrackingPage />} />
             <Route path="sales/payments" element={<PaymentPage />} />
+            <Route path="sales/price-list" element={<PriceList />} />
 
             {/* Khách hàng */}
             <Route path="customers" element={<CustomerList />} />
-           <Route
+            <Route
               path="customers/test-drive/create"
-              element={<ManagerTestDrive />} 
+              element={<ManagerTestDrive />}
             />
             <Route
               path="customers/test-drive"
               element={<TestDriveSchedule />}
             />
-            <Route
-              path="customers/feedback"
-              element={<FeedbackManagement />}
-            />
+            <Route path="customers/feedback" element={<FeedbackManagement />} />
 
             {/* Báo cáo */}
             <Route path="reports/sales" element={<SalesReport />} />
@@ -96,8 +88,7 @@ function App() {
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/homeDealer" replace />} />
-            
-           
+
             <Route path="homeEVM" element={<HomeEVM />}>
               <Route path="manage-account" element={<ManageAccount />} />
               <Route path="manage-category" element={<ManageCategory />} />

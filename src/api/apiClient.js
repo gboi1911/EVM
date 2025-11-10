@@ -1,8 +1,9 @@
 // src/api/apiClient.js
 import axios from "axios";
 import { message } from "antd";
+import { API_BASE } from "../config/api";
 
-const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
+// const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
 
 const apiClient = axios.create({
   baseURL: API_BASE,

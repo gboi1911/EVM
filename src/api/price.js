@@ -1,4 +1,5 @@
-const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
+// const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
+import { API_BASE } from "../config/api";
 
 export const getPriceListByLevel = async (level) => {
   const token = localStorage.getItem("access_token");
@@ -78,4 +79,22 @@ export const deletePriceById = async (priceId) => {
     throw new Error("Failed to delete price");
   }
   return true;
+};
+
+export const getPriceProgramHierarchy = async (level) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/price-program/hierarchy?level=${level}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch price program hierarchy");
+  }
+  return await response.json();
 };
