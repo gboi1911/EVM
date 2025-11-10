@@ -1,28 +1,29 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Spin } from 'antd';
-// THAY ĐỔI QUAN TRỌNG:
-// Import 2 hàm TỪ FILE CÓ SẴN CỦA BẠN (dùng fetch)
-import { login as apiLogin, getProfile } from '../api/authen.js'; 
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { Spin, message } from "antd";
+import { login as apiLogin, getProfile } from "../api/authen.js";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Sẽ chứa { fullName, role, ... }
-  const [loading, setLoading] = useState(true); 
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Tự động kiểm tra login khi tải lại trang
+  // Tự động lấy profile khi đã có token (refresh trang vẫn login)
   useEffect(() => {
     const fetchUserOnLoad = async () => {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem("access_token");
       if (token) {
         try {
-          // Dùng hàm getProfile (fetch) của bạn
-          const profile = await getProfile();
-          setUser(profile); // Lưu profile (chứa role)
-        } catch (e) {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          const profileResponse = await getProfile();
+          // Nhiều backend trả dạng { userInfoGetDto: {...} } nên check kỹ
+          const profile = profileResponse.userInfoGetDto || profileResponse;
+          setUser(profile);
+        } catch (err) {
+          console.error("⚠️ Token expired or invalid:", err);
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          setUser(null);
         }
       }
       setLoading(false);
@@ -30,36 +31,47 @@ export const AuthProvider = ({ children }) => {
     fetchUserOnLoad();
   }, []);
 
-  // Hàm đăng nhập
+  // 🟢 Hàm login
   const login = async (username, password) => {
     try {
-      // 1. Gọi API login (fetch) của bạn
-      // (Hàm này tự lưu token vào localStorage)
-      await apiLogin(username, password); 
-      
-      // 2. Gọi API getProfile (fetch) của bạn
-      const profile = await getProfile();
-      setUser(profile); // Lưu profile vào state
-      
+      const loginData = await apiLogin(username, password);
+      console.log("✅ Logged in:", loginData);
+
+      const profileResponse = await getProfile();
+      const profile = profileResponse.userInfoGetDto || profileResponse;
+      setUser(profile);
+
+      message.success("Đăng nhập thành công!");
       return profile;
     } catch (err) {
+      console.error("❌ Login error:", err);
+      message.error("Sai tài khoản hoặc mật khẩu!");
       setUser(null);
-      throw err; 
+      throw err;
     }
   };
 
-  // Hàm đăng xuất
+  // 🔴 Hàm logout
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.href = '/login'; 
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    message.info("Đã đăng xuất");
+    window.location.href = "/login";
   };
 
+  // Loading UI
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <Spin size="large" tip="Đang tải..." />
       </div>
     );
   }
@@ -71,7 +83,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Hook tùy chỉnh
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+// ✅ Custom hook tiện dùng
+export const useAuth = () => useContext(AuthContext);
