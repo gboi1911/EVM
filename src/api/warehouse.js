@@ -25,7 +25,7 @@ export const getWarehouseListByStatus = async (
 export const getWarehouseList = async (pageNo = 0, pageSize = 10) => {
   const token = localStorage.getItem("access_token");
   const response = await fetch(
-    `${API_BASE}/warehouse-cars/admin/warehouse-cars?pageNo=${pageNo}&pageSize=${pageSize}`,
+    `${API_BASE}/warehouse-carDetail/admin/all?pageNo=${pageNo}&pageSize=${pageSize}`,
     {
       method: "GET",
       headers: {

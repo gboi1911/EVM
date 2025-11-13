@@ -18,7 +18,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  getPriceListByLevel,
+  getPriceDetailsById,
   addDetailToPriceProgram,
   updateDetailInPriceProgram,
   removeDetailFromPriceProgram,
@@ -36,7 +36,7 @@ export default function ManagePriceDetail() {
   const fetchProgram = async () => {
     setLoading(true);
     try {
-      const res = await getPriceListByLevel(id);
+      const res = await getPriceDetailsById(id);
       setProgram(res);
     } catch {
       notification.error({ message: "Failed to load program details" });
@@ -91,24 +91,24 @@ export default function ManagePriceDetail() {
   };
 
   const columns = [
-    { title: "Car Model", dataIndex: "carModelName", key: "carModelName" },
+    { title: "Mẫu xe", dataIndex: "carModelName", key: "carModelName" },
     {
-      title: "Min Price",
+      title: "Giá thấp nhất",
       dataIndex: "minPrice",
       render: (val) => val?.toLocaleString(),
     },
     {
-      title: "Suggested Price",
+      title: "Giá đề xuất",
       dataIndex: "suggestedPrice",
       render: (val) => val?.toLocaleString(),
     },
     {
-      title: "Max Price",
+      title: "Giá cao nhất",
       dataIndex: "maxPrice",
       render: (val) => val?.toLocaleString(),
     },
     {
-      title: "Actions",
+      title: "Thao tác",
       key: "actions",
       render: (_, record) => (
         <Space>
@@ -120,7 +120,7 @@ export default function ManagePriceDetail() {
             Edit
           </Button>
           <Popconfirm
-            title="Are you sure to delete?"
+            title="Bạn có chắc chắn muốn xóa?"
             onConfirm={() => handleRemove(record.id)}
           >
             <Button icon={<DeleteOutlined />} type="link" danger>
@@ -152,7 +152,7 @@ export default function ManagePriceDetail() {
             className="bg-emerald-600 hover:bg-emerald-700"
             onClick={() => openModal()}
           >
-            Add New Detail
+            Thêm giá mới
           </Button>
         </div>
 
@@ -166,7 +166,7 @@ export default function ManagePriceDetail() {
       </Card>
 
       <Modal
-        title={editing ? "Edit Price Detail" : "Add New Price Detail"}
+        title={editing ? "Cập nhật giá" : "Thêm giá mới"}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={handleOk}
@@ -174,21 +174,21 @@ export default function ManagePriceDetail() {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label="Car Model ID"
+            label="ID Mẫu xe"
             name="carModelId"
             rules={[{ required: true, message: "Please input car model ID" }]}
           >
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
-            label="Min Price"
+            label="Giá thấp nhất"
             name="minPrice"
             rules={[{ required: true, message: "Please input min price" }]}
           >
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
-            label="Suggested Price"
+            label="Giá đề xuất"
             name="suggestedPrice"
             rules={[
               { required: true, message: "Please input suggested price" },
@@ -197,7 +197,7 @@ export default function ManagePriceDetail() {
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item
-            label="Max Price"
+            label="Giá cao nhất"
             name="maxPrice"
             rules={[{ required: true, message: "Please input max price" }]}
           >

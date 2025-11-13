@@ -67,6 +67,11 @@ const items = [
         icon: <UsergroupAddOutlined />,
         label: "Quản lý tài khoản đại lý & nhân viên",
       },
+      {
+        key: "order",
+        icon: <ShopOutlined />,
+        label: "Quản lý đơn hàng đại lý",
+      },
     ],
   },
   {
@@ -156,6 +161,9 @@ export default function NavbarEVM() {
     }
     if (e.key === "sales") {
       navigate("/homeEVM/manage-sales-report");
+    }
+    if (e.key === "order") {
+      navigate("/homeEVM/manage-order");
     }
   };
 
