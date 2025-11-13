@@ -1,7 +1,6 @@
 // src/pages/cars/CarList.jsx
 import { useEffect, useState, useMemo, useRef } from "react";
 import {
-  Tag,
   Card,
   Button,
   Row,
@@ -9,16 +8,12 @@ import {
   Image,
   Modal,
   Input,
-  Select,
-  Slider,
   Space,
   Spin,
   Carousel,
   message,
 } from "antd";
 import {
-  DollarOutlined,
-  SettingOutlined,
   ThunderboltOutlined,
   CarOutlined,
   BgColorsOutlined,
@@ -27,10 +22,7 @@ import {
   RightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-
-import { getAllCars, getCarDetails } from "../../api/cars"; // Thêm .js
-
-const { Option } = Select;
+import { getAllCars, getCarDetails } from "../../api/cars";
 
 export default function CarList() {
   const [cars, setCars] = useState([]);
@@ -38,21 +30,25 @@ export default function CarList() {
   const [selectedCars, setSelectedCars] = useState([]);
   const [compareModal, setCompareModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 100000]);
-  const [sortOption, setSortOption] = useState(null);
   const [detailCar, setDetailCar] = useState(null);
   const [fetchingDetail, setFetchingDetail] = useState(false);
 
   const navigate = useNavigate();
   const carouselRef = useRef(null);
 
-  // THAY ĐỔI 2: Sửa tên hàm gọi
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const res = await getAllCars(0, 50); // Dùng getAllCars
+        const res = await getAllCars({ pageNo: 0, pageSize: 50 });
         console.log("CAR API RESPONSE:", res);
-        setCars(res.carInfoGetDtos || []); // API (fetch) trả về data
+
+        // Gán tạm giá trị price = 0 (để hiển thị 'LIÊN HỆ')
+        const carsWithPrice = (res.carInfoGetDtos || []).map((car) => ({
+          ...car,
+          price: 0,
+        }));
+
+        setCars(carsWithPrice);
       } catch (err) {
         console.error("FETCH ERROR:", err);
         message.error("Không thể tải danh sách xe");
@@ -80,13 +76,12 @@ export default function CarList() {
     }
   };
 
-  // THAY ĐỔI 3: Sửa tên hàm gọi (thêm 's')
   const handleViewDetail = async (carId) => {
     try {
       setFetchingDetail(true);
-      const res = await getCarDetails(carId); // Dùng getCarDetails
+      const res = await getCarDetails(carId);
       console.log("DETAIL API RESPONSE:", res);
-      setDetailCar(res); // API (fetch) trả về data
+      setDetailCar(res);
     } catch (err) {
       console.error("DETAIL FETCH ERROR:", err);
       message.error("Không thể tải chi tiết xe");
@@ -95,30 +90,16 @@ export default function CarList() {
     }
   };
 
-  // Logic lọc
+  // Lọc theo tên xe
   const filteredCars = useMemo(() => {
-    let filtered = cars.filter((car) => {
-      const matchesSearch = car.carName
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase());
-        
-      const matchesPrice = car.price === 0 || (car.price >= priceRange[0] && car.price <= priceRange[1]);
-        
-      return matchesSearch && matchesPrice;
-    });
-
-    if (sortOption === "priceAsc") filtered.sort((a, b) => a.price - b.price);
-    else if (sortOption === "priceDesc")
-      filtered.sort((a, b) => b.price - a.price);
-
-    return filtered;
-  }, [cars, searchTerm, priceRange, sortOption]);
+    return cars.filter((car) =>
+      car.carName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [cars, searchTerm]);
 
   if (loading)
     return (
-      <div
-        style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}
-      >
+      <div style={{ textAlign: "center", padding: 80, backgroundColor: "#fff" }}>
         <Spin tip="Đang tải danh sách xe..." />
       </div>
     );
@@ -137,7 +118,7 @@ export default function CarList() {
         Danh mục xe điện
       </h2>
 
-      {/* Bộ lọc */}
+      {/* Ô tìm kiếm */}
       <Space
         direction="vertical"
         size="middle"
@@ -155,7 +136,6 @@ export default function CarList() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-   
       </Space>
 
       {/* Danh sách xe */}
@@ -172,48 +152,72 @@ export default function CarList() {
                   hoverable
                   style={{
                     width: "100%",
-                    maxWidth: 280,
-                    borderRadius: 12,
-                    border: isSelected ? "2px solid #10b981" : "none",
-                    opacity: isDisabled ? 0.5 : 1,
+                    borderRadius: 16,
+                    border: isSelected ? "2px solid #10b981" : "1px solid #e5e7eb",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    transition: "0.3s",
+                    opacity: isDisabled ? 0.6 : 1,
                   }}
                   cover={
-                    <Image
-                      alt={car.carName}
-                      src={car.carImages?.[0]?.fileUrl}
-                      height={180}
-                      style={{
-                        objectFit: "cover",
-                        borderTopLeftRadius: 12,
-                        borderTopRightRadius: 12,
-                      }}
-                      preview={false}
-                    />
+                    <div style={{ height: 200, overflow: "hidden" }}>
+                      <Image
+                        alt={car.carName}
+                        src={car.carImages?.[0]?.fileUrl}
+                        height={200}
+                        width="100%"
+                        style={{
+                          objectFit: "cover",
+                          borderTopLeftRadius: 16,
+                          borderTopRightRadius: 16,
+                          transition: "transform 0.3s ease",
+                        }}
+                        preview={false}
+                      />
+                    </div>
                   }
                 >
-                  <h3 style={{ fontSize: "15px" }}>{car.carName}</h3>
-                  
-                  <p style={{ 
-                    color: car.price === 0 ? "#d32f2f" : "#059669", 
-                    fontWeight: 600 
-                  }}>
-                    {car.price === 0 ? "LIÊN HỆ" : car.price.toLocaleString() + " $"}
-                  </p>
+                  <div style={{ textAlign: "center" }}>
+                    <h3
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 600,
+                        margin: "8px 0",
+                        color: "#111827",
+                      }}
+                    >
+                      {car.carName}
+                    </h3>
 
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <Button
-                      type={isSelected ? "primary" : "default"}
-                      block
-                      onClick={() => handleSelectCar(car.carId)}
+                    <p
+                      style={{
+                        color: "#d32f2f",
+                        fontWeight: 600,
+                        fontSize: 15,
+                        marginBottom: 16,
+                      }}
                     >
-                      {isSelected ? "Đã chọn" : "Chọn so sánh"}
-                    </Button>
-                    <Button
-                      onClick={() => handleViewDetail(car.carId)}
-                      style={{ borderColor: "#2563eb", color: "#2563eb" }}
-                    >
-                      Chi tiết
-                    </Button>
+                      LIÊN HỆ
+                    </p>
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Button
+                        type={isSelected ? "primary" : "default"}
+                        block
+                        onClick={() => handleSelectCar(car.carId)}
+                      >
+                        {isSelected ? "Đã chọn" : "Chọn so sánh"}
+                      </Button>
+                      <Button
+                        onClick={() => handleViewDetail(car.carId)}
+                        style={{
+                          borderColor: "#2563eb",
+                          color: "#2563eb",
+                          width: "100%",
+                        }}
+                      >
+                        Chi tiết
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               </Col>
@@ -244,24 +248,20 @@ export default function CarList() {
         onCancel={() => setDetailCar(null)}
         title={`Chi tiết xe: ${detailCar?.carName || ""}`}
         footer={null}
+        width={700}
       >
         {fetchingDetail ? (
           <Spin />
         ) : (
           detailCar && (
             <div style={{ position: "relative" }}>
-              <Carousel
-                ref={carouselRef}
-                autoplay
-                dots
-                style={{ marginBottom: 16 }}
-              >
+              <Carousel ref={carouselRef} autoplay dots style={{ marginBottom: 16 }}>
                 {detailCar.carImages?.map((img, index) => (
                   <div key={index}>
                     <Image
                       src={img.fileUrl}
                       alt={`${detailCar.carName} - ${index}`}
-                      height={250}
+                      height={300}
                       width="100%"
                       style={{ objectFit: "cover", borderRadius: 8 }}
                       preview={false}
@@ -269,8 +269,10 @@ export default function CarList() {
                   </div>
                 ))}
               </Carousel>
+
               <Button
-                type="text" icon={<LeftOutlined />}
+                type="text"
+                icon={<LeftOutlined />}
                 onClick={() => carouselRef.current.prev()}
                 style={{
                   position: "absolute",
@@ -280,13 +282,11 @@ export default function CarList() {
                   color: "#fff",
                   background: "rgba(0,0,0,0.4)",
                   borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                 }}
               />
               <Button
-                type="text" icon={<RightOutlined />}
+                type="text"
+                icon={<RightOutlined />}
                 onClick={() => carouselRef.current.next()}
                 style={{
                   position: "absolute",
@@ -296,23 +296,23 @@ export default function CarList() {
                   color: "#fff",
                   background: "rgba(0,0,0,0.4)",
                   borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                 }}
               />
 
-              <p>
-                <ThunderboltOutlined /> Công suất:{" "}
-                {detailCar.performanceDetailGetDto?.motor?.powerKw} kW
-              </p>
-              <p>
-                <CarOutlined /> Quãng đường:{" "}
-                {detailCar.performanceDetailGetDto?.rangeMiles} miles
-              </p>
-              <p>
-                <BgColorsOutlined /> Màu: {detailCar.color?.colorName || "N/A"}
-              </p>
+              <div style={{ marginTop: 16 }}>
+                <p>
+                  <ThunderboltOutlined /> Công suất:{" "}
+                  {detailCar.performanceDetailGetDto?.motor?.powerKw || "N/A"} kW
+                </p>
+                <p>
+                  <CarOutlined /> Quãng đường:{" "}
+                  {detailCar.performanceDetailGetDto?.rangeMiles || "N/A"} miles
+                </p>
+                <p>
+                  <BgColorsOutlined /> Màu:{" "}
+                  {detailCar.color?.colorName || "N/A"}
+                </p>
+              </div>
             </div>
           )
         )}

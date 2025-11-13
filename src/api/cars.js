@@ -1,9 +1,9 @@
-// const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
 import { API_BASE } from "../config/api";
 
 export const getCarDetails = async (carId) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/car/${carId}/detail`, {
+
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/detail`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -16,15 +16,12 @@ export const getCarDetails = async (carId) => {
   return await response.json();
 };
 
-// ✅ SỬA LỖI: Đã sửa (pageNo, pageSize) thành ({ pageNo, pageSize })
-// DÒNG MỚI (ĐÃ SỬA)
 export const getAllCars = async (params) => {
-  // Bóc tách object params
   const { pageNo = 0, pageSize = 10 } = params || {};
-
   const token = localStorage.getItem("access_token");
+
   const response = await fetch(
-    `${API_BASE}/car/all?pageNo=${pageNo}&pageSize=${pageSize}`,
+    `${API_BASE}/carDetail/all?pageNo=${pageNo}&pageSize=${pageSize}`,
     {
       method: "GET",
       headers: {
@@ -33,6 +30,7 @@ export const getAllCars = async (params) => {
       },
     }
   );
+
   if (!response.ok) {
     throw new Error("Failed to fetch cars");
   }

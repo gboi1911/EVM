@@ -1,3 +1,4 @@
+// src/api/testDrive.js
 import apiClient from "../api/apiClient";
 
 // === SLOT CONTROLLER ===
@@ -7,7 +8,15 @@ import apiClient from "../api/apiClient";
  * API: GET /api/v1/slot/all
  */
 export const getAllSlots = () => {
-  return apiClient.get('/slot/all');
+  return apiClient.get("/slot/all");
+};
+
+/**
+ * Lấy chi tiết 1 slot (dùng cho trang Edit)
+ * API: GET /api/v1/slot/detail/{slotId}
+ */
+export const getSlotById = (slotId) => {
+  return apiClient.get(`/slot/detail/${slotId}`);
 };
 
 /**
@@ -15,17 +24,17 @@ export const getAllSlots = () => {
  * API: POST /api/v1/slot/create
  */
 export const createSlot = (slotData) => {
-  // slotData: { carId, amount, startTime, endTime }
-  return apiClient.post('/slot/create', slotData);
+  // slotData: { dealerStaffId, carModelInSlotPostDto, numCustomers, startTime, endTime }
+  return apiClient.post("/slot/create", slotData);
 };
 
 /**
  * (Dành cho Admin/Manager) Cập nhật slot
- * API: PATCH /api/v1/slot/update
+ * API: PATCH /api/v1/slot/update/{slotId}
  */
-export const updateSlot = (updateData) => {
-  // updateData: { slotId, newStartTime, newEndTime, newAmount }
-  return apiClient.patch('/slot/update', updateData);
+export const updateSlot = (slotId, updateData) => {
+  // updateData: { newNumCustomers, newStartTime, newEndTime }
+  return apiClient.patch(`/slot/update/${slotId}`, updateData);
 };
 
 /**
@@ -39,16 +48,16 @@ export const deleteSlot = (id) => {
 // === BOOKING CONTROLLER ===
 
 /**
- * (Dành cho Khách/Nhân viên) Đặt một lịch hẹn
+ * (Dành cho Khách/Nhân viên) Đặt một lịch hẹn lái thử
  * API: POST /api/v1/booking/create
  */
 export const bookTestDrive = (bookingData) => {
-  // bookingData: { slotId, customerPhone }
-  return apiClient.post('/booking/create', bookingData);
+  // bookingData: { slotId, customerName, customerPhone }
+  return apiClient.post("/booking/create", bookingData);
 };
 
 /**
- * Lấy danh sách ai đã đặt cho 1 slot cụ thể
+ * Lấy danh sách khách hàng đã đặt của 1 slot cụ thể
  * API: GET /api/v1/booking/slot/{slotId}
  */
 export const getBookingsForSlot = (slotId) => {
@@ -56,9 +65,13 @@ export const getBookingsForSlot = (slotId) => {
 };
 
 /**
- * Hủy một lịch hẹn
+ * Hủy một lịch hẹn lái thử
  * API: DELETE /api/v1/booking/{bookingId}
  */
 export const cancelBooking = (bookingId) => {
   return apiClient.delete(`/booking/${bookingId}`);
+};
+
+export const getTrialCarModels = () => {
+  return apiClient.get("/carDetail-model/get-trial-model-carDetail");
 };
