@@ -185,3 +185,23 @@ export const filterAccountsByRole = async (role, pageNo = 0, pageSize = 10) => {
   }
   return await response.json();
 };
+
+export const getDealerStaff = async (params) => {
+  const { pageNo = 0, pageSize = 10 } = params || {};
+  const token = localStorage.getItem("access_token");
+
+  const response = await fetch(
+    `${API_BASE}/dealer/staff?pageNo=${pageNo}&pageSize=${pageSize}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Không thể tải danh sách nhân viên");
+  }
+  return await response.json();
+};

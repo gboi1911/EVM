@@ -1,8 +1,19 @@
+// src/pages/cars/CarCompare.jsx
 import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Card, Row, Col, Button, Image, Spin, Carousel, message } from "antd";
+import {
+  Card,
+  Row,
+  Col,
+  Button,
+  Image,
+  Spin,
+  Carousel,
+  message,
+  Divider,
+} from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
-import axios from "axios";
+import { getCarDetails } from "../../api/cars.js"; 
 
 export default function CarCompare() {
   const location = useLocation();
@@ -17,15 +28,15 @@ export default function CarCompare() {
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const responses = await Promise.all(
-          ids.map((id) =>
-            axios.get(`http://localhost:8000/evdealer/api/v1/car/${id}/detail`)
-          )
-        );
-        setCars(responses.map((r) => r.data));
+        const responses = await Promise.all(ids.map((id) => getCarDetails(id)));
+        
+        // ❗️ SỬA LỖI: API trả về object lồng nhau
+        // (JSON (Block 2) không có 'carDetailGetDto', nó là object gốc)
+        setCars(responses); 
+
       } catch (err) {
         console.error("FETCH ERROR:", err);
-        message.error("Không thể tải dữ liệu so sánh");
+        message.error("Không thể tải dữ liệu so sánh: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -35,9 +46,7 @@ export default function CarCompare() {
 
   if (loading)
     return (
-      <div
-        style={{ textAlign: "center", padding: 60, backgroundColor: "#fff" }}
-      >
+      <div style={{ textAlign: "center", padding: 60, backgroundColor: "#fff" }}>
         <Spin tip="Đang tải dữ liệu so sánh..." />
       </div>
     );
@@ -57,28 +66,34 @@ export default function CarCompare() {
       <h2
         style={{
           fontWeight: 700,
-          fontSize: 25,
+          fontSize: 28,
           color: "#059669",
           textAlign: "center",
-          marginBottom: 24,
+          marginBottom: 32,
         }}
       >
         So sánh xe điện
       </h2>
-      <Row gutter={32}>
+
+      <Row gutter={[32, 32]}>
         {cars.map((car, index) => (
-          <Col span={12} key={car.id}>
+          // Dùng carDetailId (từ JSON Block 2)
+          <Col span={12} key={car.carDetailId || index}> 
             <Card
               title={car.carName}
               bordered
               style={{
-                borderRadius: 12,
+                borderRadius: 16,
                 overflow: "hidden",
-                border: "1px solid #059669",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
               }}
               headStyle={{
-                backgroundColor: "#059669", // <-- Thêm dòng này
-                color: "#fff", // <-- Thêm dòng này để chữ màu trắng
+                backgroundColor: "#059669",
+                color: "#fff",
+                fontSize: 18,
+                fontWeight: 600,
+                textAlign: "center",
               }}
             >
               <div style={{ position: "relative", marginBottom: 16 }}>
@@ -93,7 +108,7 @@ export default function CarCompare() {
                         <Image
                           src={img.fileUrl}
                           alt={`${car.carName}-${i}`}
-                          height={250}
+                          height={260}
                           width="100%"
                           style={{
                             objectFit: "cover",
@@ -110,19 +125,14 @@ export default function CarCompare() {
                   )}
                 </Carousel>
 
-                {/* Nút điều hướng Carousel */}
+                {/* Nút điều hướng ảnh */}
                 <Button
                   type="text"
                   icon={<LeftOutlined />}
                   onClick={() => carouselRefs.current[index]?.prev()}
                   style={{
-                    position: "absolute",
-                    top: "45%",
-                    left: 10,
-                    zIndex: 2,
-                    color: "#fff",
-                    background: "rgba(0,0,0,0.4)",
-                    borderRadius: "50%",
+                    position: "absolute", top: "45%", left: 10, zIndex: 2,
+                    color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
                   }}
                 />
                 <Button
@@ -130,56 +140,78 @@ export default function CarCompare() {
                   icon={<RightOutlined />}
                   onClick={() => carouselRefs.current[index]?.next()}
                   style={{
-                    position: "absolute",
-                    top: "45%",
-                    right: 10,
-                    zIndex: 2,
-                    color: "#fff",
-                    background: "rgba(0,0,0,0.4)",
-                    borderRadius: "50%",
+                    position: "absolute", top: "45%", right: 10, zIndex: 2,
+                    color: "#fff", background: "rgba(0,0,0,0.4)", borderRadius: "50%",
                   }}
                 />
               </div>
 
-              <p>
-                <b>Giá bán:</b>{" "}
-                {car.price
-                  ? Number(car.price).toLocaleString() + " ₫"
-                  : "Đang cập nhật"}
-              </p>
+              <Divider style={{ margin: "8px 0" }} />
 
-              <p>
-                <b>Loại dẫn động:</b> {car.driveType || "N/A"}
-              </p>
-              <p>
-                <b>Năm sản xuất:</b> {car.year || "N/A"}
-              </p>
-              <p>
-                <b>Quãng đường:</b>{" "}
-                {car.performanceDetailGetDto?.rangeMiles || "N/A"} miles
-              </p>
-              <p>
-                <b>Tốc độ tối đa:</b>{" "}
-                {car.performanceDetailGetDto?.topSpeedMph || "N/A"} mph
-              </p>
-              <p>
-                <b>Màu sắc:</b> {car.color?.colorName || "N/A"}
-              </p>
-              <p>
-                <b>Pin:</b>{" "}
-                {car.performanceDetailGetDto?.battery?.chemistryType || "N/A"}
-              </p>
-              <p>
-                <b>Động cơ:</b>{" "}
-                {car.performanceDetailGetDto?.motor?.motorType || "N/A"}
-              </p>
+              {/* ❗️ SỬA LỖI N/A: Khớp 100% với JSON (Block 2) */}
+              <div style={{ fontSize: 15, lineHeight: "1.8em" }}>
+                <p>
+                  <b>Giá bán:</b>{" "}
+                  <span style={{ color: "#d32f2f", fontWeight: 600 }}>
+                    {/* JSON (Block 2) không có 'price' */}
+                    LIÊN HỆ
+                  </span>
+                </p>
+                <p>
+                  <b>Mẫu xe:</b> {car.carModelName || "N/A"}
+                </p>
+                <p>
+                  <b>Số chỗ ngồi:</b> {car.dimension?.seatNumber || "N/A"}
+                </p>
+                <p>
+                  <b>Cân nặng:</b> {car.dimension?.weightLbs || "N/A"} lbs
+                </p>
+                 <p>
+                  <b>Chiều dài:</b> {car.dimension?.lengthIn || "N/A"} in
+                </p>
+                <p>
+                  <b>Quãng đường:</b>{" "}
+                  {car.performanceDetailGetDto?.rangeMiles || "N/A"} miles
+                </p>
+                <p>
+                  <b>Tốc độ tối đa:</b>{" "}
+                  {car.performanceDetailGetDto?.topSpeedMph || "N/A"} mph
+                </p>
+                <p>
+                  <b>Tăng tốc (0-60 mph):</b>{" "}
+                  {car.performanceDetailGetDto?.accelerationSec || "N/A"} giây
+                </p>
+                 <p>
+                  <b>Khả năng kéo (Towing):</b>{" "}
+                  {car.performanceDetailGetDto?.towingLbs || "N/A"} lbs
+                </p>
+                <p>
+                  <b>Loại pin:</b>{" "}
+                  {car.performanceDetailGetDto?.battery || "N/A"}
+                </p>
+                <p>
+                  <b>Kiểu động cơ:</b>{" "}
+                  {car.performanceDetailGetDto?.motor || "N/A"}
+                </p>
+              </div>
             </Card>
           </Col>
         ))}
       </Row>
 
-      <div style={{ textAlign: "center", marginTop: 32 }}>
-        <Button onClick={() => navigate(-1)}>Quay lại danh mục xe</Button>
+      <div style={{ textAlign: "center", marginTop: 40 }}>
+        <Button
+          type="primary"
+          size="large"
+          onClick={() => navigate(-1)} // Quay lại trang CarList
+          style={{
+            backgroundColor: "#059669",
+            borderColor: "#059669",
+            borderRadius: 8,
+          }}
+        >
+          Quay lại danh mục xe
+        </Button>
       </div>
     </div>
   );
