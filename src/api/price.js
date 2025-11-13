@@ -98,3 +98,59 @@ export const getPriceProgramHierarchy = async (level) => {
   }
   return await response.json();
 };
+
+export const addDetailToPriceProgram = async (priceId, detailData) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/program-detail/add-detail/${priceId}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(detailData),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to add detail to price program");
+  }
+  return await response.json();
+};
+
+export const removeDetailFromPriceProgram = async (detailId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/program-detail/details/${detailId}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to remove detail from price program");
+  }
+  return await response.json();
+};
+
+export const updateDetailInPriceProgram = async (detailId, detailData) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/program-detail/details/${detailId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(detailData),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to update detail in price program");
+  }
+  return await response.json();
+};

@@ -27,6 +27,7 @@ import {
   deletePriceById,
 } from "../../api/price";
 import moment from "moment";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const dealerOptions = [
   { label: "Đại lý 1", value: 1 },
@@ -43,6 +44,7 @@ export default function ManagePrice() {
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailData, setDetailData] = useState([]);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     fetchPrices(selectedLevel);
@@ -61,7 +63,6 @@ export default function ManagePrice() {
   };
 
   const openDetail = (record) => {
-    // record.programDetails là array
     setDetailData(record.programDetails || []);
     setDetailOpen(true);
   };
@@ -78,7 +79,6 @@ export default function ManagePrice() {
         endDate: moment(details.endDay),
       });
     } else {
-      // default new
       const now8am = moment().set({
         hour: 7,
         minute: 0,
@@ -89,7 +89,7 @@ export default function ManagePrice() {
       form.setFieldsValue({
         dealerHierarchy: null,
         startDate: now8am,
-        endDate: now8am.clone().add(30, "days"), // auto end 30 ngày sau
+        endDate: now8am.clone().add(30, "days"),
       });
     }
   };
@@ -168,13 +168,13 @@ export default function ManagePrice() {
       key: "action",
       render: (_, record) => (
         <Space>
-          <Button
+          {/* <Button
             icon={<EyeOutlined />}
             onClick={() => openDetail(record)}
             type="link"
           >
             Xem
-          </Button>
+          </Button> */}
           <Button
             icon={<EditOutlined />}
             onClick={() => openModal(record)}
@@ -192,6 +192,14 @@ export default function ManagePrice() {
               Xóa
             </Button>
           </Popconfirm>
+          <Button
+            type="link"
+            onClick={() =>
+              navigate(`/homeEVM/price-detail/${record.priceProgramId}`)
+            } // Navigate to price detail page
+          >
+            Chi tiết giá
+          </Button>
         </Space>
       ),
     },
@@ -283,7 +291,7 @@ export default function ManagePrice() {
       >
         <Table
           columns={[
-            { title: "Mẫu xe", dataIndex: "carName" },
+            { title: "Mẫu xe", dataIndex: "carModelName" },
             { title: "Giá tối thiểu", dataIndex: "minPrice" },
             { title: "Giá đề xuất", dataIndex: "suggestedPrice" },
             { title: "Giá tối đa", dataIndex: "maxPrice" },
