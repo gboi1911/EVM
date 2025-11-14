@@ -1,20 +1,26 @@
 // src/pages/customers/CustomerList.jsx
 import { Table, Button, Spin, message, Modal, Form, Input } from "antd";
 import { useEffect, useState } from "react";
-// Import cả 2 hàm listCustomers và createCustomer
-import { listCustomers, createCustomer } from "../../api/customer";
-import { PlusOutlined } from "@ant-design/icons";
+import {
+  listCustomers,
+  createCustomer,
+  updateCustomerInfo,
+} from "../../api/customer";
+import { PlusOutlined, EditOutlined } from "@ant-design/icons";
 
 export default function CustomerList() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State cho Modal tạo mới
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createFormLoading, setCreateFormLoading] = useState(false);
+  const [createForm] = Form.useForm();
 
-  // Tách hàm fetch ra để có thể gọi lại sau khi tạo mới
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFormLoading, setEditFormLoading] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [editForm] = Form.useForm();
+
   const fetchCustomers = async () => {
     try {
       setLoading(true);
@@ -27,24 +33,80 @@ export default function CustomerList() {
     }
   };
 
-  // Gọi API khi trang tải lần đầu
   useEffect(() => {
     fetchCustomers();
-  }, []); // Mảng rỗng = chạy 1 lần khi load trang
+  }, []);
 
-  // Xử lý khi submit form tạo mới
   const handleCreateCustomer = async (values) => {
     try {
-      setFormLoading(true);
-      await createCustomer(values);
+      setCreateFormLoading(true);
+      // Gửi 'null' nếu người dùng không nhập (thay vì '""')
+      const payload = {
+        fullName: values.fullName,
+        phone: values.phone,
+        email: values.email || null,
+        address: values.address || null,
+      };
+      await createCustomer(payload);
       message.success("Tạo khách hàng thành công!");
-      setIsModalOpen(false); // Đóng modal
-      form.resetFields(); // Xóa dữ liệu form
-      fetchCustomers(); // Tải lại danh sách khách hàng
+      setIsCreateModalOpen(false);
+      createForm.resetFields();
+      fetchCustomers();
     } catch (e) {
-      message.error("Tạo khách hàng thất bại");
+      message.error("Tạo khách hàng thất bại: " + e.message);
     } finally {
-      setFormLoading(false);
+      setCreateFormLoading(false);
+    }
+  };
+
+  const handleOpenEditModal = (record) => {
+    setEditingCustomer(record);
+    editForm.setFieldsValue(record);
+    setIsEditModalOpen(true);
+  };
+
+  // ❗️ SỬA LỖI 500 (Theo yêu cầu BE):
+  // Chỉ gửi các trường (field) đã thực sự thay đổi.
+  const handleUpdateCustomer = async (newValues) => {
+    if (!editingCustomer) return;
+
+    const payload = {}; // Dữ liệu 'payload' chỉ chứa các thay đổi
+
+    // 1. So sánh giá trị mới (newValues) với giá trị cũ (editingCustomer)
+    Object.keys(newValues).forEach((key) => {
+      const oldValue = editingCustomer[key];
+      let newValue = newValues[key];
+
+      // 2. Xử lý (normalize) giá trị:
+      // Nếu newValue là '""' (chuỗi rỗng), gửi 'null' (Backend dễ xử lý hơn)
+      if (newValue === "") newValue = null;
+
+      // 3. Chỉ thêm vào 'payload' nếu giá trị đã thay đổi
+      if (newValue !== oldValue) {
+        payload[key] = newValue;
+      }
+    });
+
+    // 4. Kiểm tra xem có gì thay đổi không
+    if (Object.keys(payload).length === 0) {
+      message.info("Không có thay đổi nào được ghi nhận.");
+      setIsEditModalOpen(false); // Chỉ cần đóng Modal
+      return;
+    }
+
+    // 5. Gửi 'payload' (chỉ chứa các thay đổi) lên server
+    try {
+      setEditFormLoading(true);
+      await updateCustomerInfo(editingCustomer.id, payload); // Gửi 'payload', không phải 'newValues'
+      message.success("Cập nhật khách hàng thành công!");
+      setIsEditModalOpen(false);
+      setEditingCustomer(null);
+      fetchCustomers();
+    } catch (e) {
+      // (Lỗi 500 do BE vẫn crash khi nhận 'Bearer Token' vẫn có thể xảy ra ở đây)
+      message.error("Cập nhật thất bại: " + e.message);
+    } finally {
+      setEditFormLoading(false);
     }
   };
 
@@ -67,7 +129,11 @@ export default function CustomerList() {
       title: "Thao tác",
       width: 120,
       render: (_, record) => (
-        <Button type="link" onClick={() => console.log("Sửa:", record.id)}>
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => handleOpenEditModal(record)}
+        >
           Sửa
         </Button>
       ),
@@ -85,54 +151,56 @@ export default function CustomerList() {
           padding: 24,
         }}
       >
-        {/* THAY ĐỔI: Xóa <div> bọc ngoài và thêm style vào <h2> */}
         <h2
           style={{
             fontSize: 25,
             fontWeight: 700,
             color: "#059669",
-            textAlign: "center", // Thêm thuộc tính này
-            marginBottom: 24, // Thêm thuộc tính này
+            textAlign: "center",
+            marginBottom: 24,
           }}
         >
           Hồ sơ khách hàng
         </h2>
 
-        <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            onClick={() => setIsModalOpen(true)}
-            style={{ marginBottom: 24 }} // Thêm margin
-          >
-            Tạo khách hàng mới
-          </Button>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setIsCreateModalOpen(true)}
+          style={{ marginBottom: 24 }}
+        >
+          Tạo khách hàng mới
+        </Button>
 
-        {/* Dùng Spin để bao bọc Table */}
         <Spin spinning={loading}>
           <Table dataSource={customers} columns={columns} rowKey="id" />
         </Spin>
       </div>
 
-      {/* Modal để tạo khách hàng (Giữ nguyên) */}
+      {/* Modal để TẠO khách hàng (Giữ nguyên 'required: true') */}
       <Modal
         title="Tạo khách hàng mới"
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        open={isCreateModalOpen}
+        onCancel={() => setIsCreateModalOpen(false)}
         footer={[
-          <Button key="back" onClick={() => setIsModalOpen(false)}>
+          <Button key="back" onClick={() => setIsCreateModalOpen(false)}>
             Hủy
           </Button>,
           <Button
             key="submit"
             type="primary"
-            loading={formLoading}
-            onClick={() => form.submit()}
+            loading={createFormLoading}
+            onClick={() => createForm.submit()}
           >
             Lưu
           </Button>,
         ]}
       >
-        <Form form={form} layout="vertical" onFinish={handleCreateCustomer}>
+        <Form
+          form={createForm}
+          layout="vertical"
+          onFinish={handleCreateCustomer}
+        >
           <Form.Item
             name="fullName"
             label="Họ và tên"
@@ -149,6 +217,57 @@ export default function CustomerList() {
           >
             <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ type: "email", message: "Email không hợp lệ" }]}
+          >
+            <Input placeholder="Nhập email (ví dụ: user@gmail.com)" />
+          </Form.Item>
+          <Form.Item name="address" label="Địa chỉ">
+            <Input placeholder="Nhập địa chỉ" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal để SỬA khách hàng */}
+      <Modal
+        title={`Cập nhật Khách hàng: ${editingCustomer?.fullName || ""}`}
+        open={isEditModalOpen}
+        onCancel={() => setIsEditModalOpen(false)}
+        footer={[
+          <Button key="back" onClick={() => setIsEditModalOpen(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={editFormLoading}
+            onClick={() => editForm.submit()}
+          >
+            Lưu thay đổi
+          </Button>,
+        ]}
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleUpdateCustomer}>
+          <Form.Item
+            name="fullName"
+            label="Họ và tên"
+            rules={[
+              { required: true, message: "Vui lòng nhập tên khách hàng" },
+            ]}
+          >
+            <Input placeholder="Nhập họ tên" />
+          </Form.Item>
+
+          <Form.Item
+            name="phone"
+            label="Số điện thoại"
+            // (Bỏ 'rules')
+          >
+            <Input placeholder="Nhập số điện thoại" />
+          </Form.Item>
+
           <Form.Item
             name="email"
             label="Email"

@@ -46,3 +46,14 @@ export const updateCustomerByPhone = (phone, customerData) => {
         params: { phone } // Gửi SĐT qua query param
     });
 };
+
+/**
+ * Cập nhật thông tin khách hàng
+ * API: PATCH /api/v1/dealer/customers/{customerId}/update-info
+ */
+export const updateCustomerInfo = (customerId, updateData) => {
+  // updateData: { fullName, phone, email, address }
+  return apiClient.patch(
+    `/dealer/customers/${customerId}/update-info`, updateData
+  );
+};
