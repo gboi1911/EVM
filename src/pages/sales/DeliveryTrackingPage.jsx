@@ -1,5 +1,5 @@
 // src/pages/sales/DeliveryTrackingPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react"; // ❗️ Thêm useMemo
 import { 
   Spin, message, Tag, Card, Steps, Button, Modal, Form, InputNumber, Select 
 } from "antd";
@@ -9,10 +9,11 @@ import {
   ArrowRightOutlined
 } from "@ant-design/icons";
 import { getListOrders, addPaymentToOrder, updateOrder } from "../../api/order";
+import { useAuth } from "../../context/AuthContext"; 
 
 const { Step } = Steps;
 
-// Timeline các bước giao xe
+// (Các hằng số Map giữ nguyên)
 const deliverySteps = [
   { title: "Đã tạo đơn", description: "Đơn hàng được tạo", icon: <FileTextOutlined />, status: "PENDING" },
   { title: "Đã duyệt", description: "Đã phê duyệt", icon: <CheckCircleOutlined />, status: "APPROVED" },
@@ -20,16 +21,13 @@ const deliverySteps = [
   { title: "Đã giao", description: "Giao xe thành công", icon: <HomeOutlined />, status: "DELIVERED" },
   { title: "Hoàn tất", description: "Đơn hàng hoàn tất", icon: <SmileOutlined />, status: "COMPLETED" }
 ];
-
-// Payment status map
 const paymentStatusMap = {
   PENDING: { color: "#ef4444", text: "Chưa thanh toán" },
   DEPOSIT_PAID: { color: "#f59e0b", text: "Đã cọc" },
   PARTIAL: { color: "#f59e0b", text: "Thanh toán 1 phần" },
   PAID: { color: "#10b981", text: "Đã thanh toán đủ" },
+  FINISHED: { color: "#10b981", text: "Đã thanh toán đủ" }, 
 };
-
-// Order status map
 const orderStatusMap = {
   PENDING: { text: "Đã tạo đơn", color: "#6b7280" },
   APPROVED: { text: "Đã duyệt", color: "#3b82f6" },
@@ -37,8 +35,6 @@ const orderStatusMap = {
   DELIVERED: { text: "Đã giao", color: "#10b981" },
   COMPLETED: { text: "Hoàn tất", color: "#059669" }
 };
-
-// Hành động tiếp theo dựa theo trạng thái
 const nextStepMap = {
   PENDING: { next: "APPROVED", text: "Duyệt đơn", icon: <CheckCircleOutlined /> },
   APPROVED: { next: "IN_DELIVERY", text: "Bắt đầu Giao hàng", icon: <TruckOutlined /> },
@@ -57,19 +53,33 @@ export default function DeliveryTrackingPage() {
   const [paymentForm] = Form.useForm();
 
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+  
+  const { user, loading: authLoading } = useAuth();
+  // ❗️ Sửa: Gói 'isManager' trong useMemo
+  const isManager = useMemo(() => user && user.role === "DEALER_MANAGER", [user]);
 
   // Lấy tất cả đơn hàng
   const fetchAllOrders = async () => {
+    if (!user) return; // Chờ user
     try {
       setLoading(true);
-      const res = await Promise.all([
-        getListOrders({ status: "PENDING" }),
-        getListOrders({ status: "APPROVED" }),
-        getListOrders({ status: "IN_DELIVERY" }),
-        getListOrders({ status: "DELIVERED" }),
-      ]);
+      const statuses = ["PENDING", "APPROVED", "IN_DELIVERY", "DELIVERED", "COMPLETED"];
+      
+      // ❗️ SỬA LỖI 403 (Theo yêu cầu BE)
+      const baseParams = {};
+      if (!isManager) {
+        baseParams.staffId = user.id; // Gán staffId
+      }
+      
+      const responses = await Promise.all(
+        statuses.map(status => {
+           const params = { ...baseParams, status };
+           return getListOrders(params); // Gửi params
+        })
+      );
 
-      const allOrders = [...res[0].data, ...res[1].data, ...res[2].data, ...res[3].data];
+      const allOrders = responses.flatMap(res => res.data || res || []);
+      
       const sortedOrders = allOrders.sort((a, b) => a.id - b.id);
       setOrders(sortedOrders);
 
@@ -80,16 +90,18 @@ export default function DeliveryTrackingPage() {
         setSelectedOrder(sortedOrders[0]);
       }
       
-    } catch {
-      message.error("Không tải được dữ liệu giao xe");
+    } catch(err) {
+      message.error("Không tải được dữ liệu giao xe: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAllOrders();
-  }, []);
+    if (!authLoading && user) { // ❗️ Thêm 'user'
+      fetchAllOrders();
+    }
+  }, [authLoading, user]); // ❗️ Thêm 'user'
 
   const getCurrentStep = (status) => {
     const stepIndex = deliverySteps.findIndex(step => step.status === status);
@@ -128,8 +140,10 @@ export default function DeliveryTrackingPage() {
 
   // Component Item List
   const OrderListItem = ({ order, isSelected, onClick }) => {
-    const img = order.car?.carImages?.[0]?.fileUrl;
+    // (Sửa lỗi N/A từ tin nhắn trước)
+    const img = order.carDetail?.carImages?.[0]?.fileUrl;
     const statusInfo = orderStatusMap[order.status] || { text: order.status, color: "#6b7280" };
+    const carName = order.carDetail?.carName || order.carModelGetDetailDto?.carModelName || "N/A";
 
     return (
       <Card
@@ -144,13 +158,13 @@ export default function DeliveryTrackingPage() {
       >
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {img && (
-            <img src={img} alt={order.car?.carName}
+            <img src={img} alt={carName}
               style={{ width: 60, height: 45, objectFit: "cover", borderRadius: 6, background: "#f3f4f6" }}
             />
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {order.car?.carName || "N/A"}
+              {carName}
             </div>
             <div style={{ fontSize: 11, color: "#6b7280", display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
               <UserOutlined style={{ fontSize: 10 }} />
@@ -178,11 +192,11 @@ export default function DeliveryTrackingPage() {
       );
     }
 
-    const img = order.car?.carImages?.[0]?.fileUrl;
+    // (Sửa lỗi N/A từ tin nhắn trước)
+    const img = order.carDetail?.carImages?.[0]?.fileUrl;
     const payInfo = paymentStatusMap[order.paymentStatus] || { text: order.paymentStatus, color: "#6b7280" };
     const paymentPercent = (order.totalAmount > 0) ? ((order.amountPaid / order.totalAmount) * 100).toFixed(0) : 0;
-
-    // 🔹 Fix màu thanh khi 100%
+    
     let progressColor = payInfo.color;
     if (paymentPercent >= 100) progressColor = "#10b981";
 
@@ -191,18 +205,20 @@ export default function DeliveryTrackingPage() {
     const isFullyPaid = paymentPercent >= 100;
 
     const nextAction = nextStepMap[order.status];
+    
+    const carName = order.carDetail?.carName || order.carModelGetDetailDto?.carModelName || "N/A";
 
     return (
       <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
         {/* Header */}
         <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
           {img && (
-            <img src={img} alt={order.car?.carName}
+            <img src={img} alt={carName}
               style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, background: "#f3f4f6" }}
             />
           )}
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: "0 0 8px 0", color: "#1f2937" }}>{order.car?.carName}</h3>
+            <h3 style={{ margin: "0 0 8px 0", color: "#1f2937" }}>{carName}</h3>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <UserOutlined style={{ color: "#6b7280" }} />
               <span style={{ color: "#6b7280" }}>{order.customer?.fullName}</span>
@@ -231,13 +247,15 @@ export default function DeliveryTrackingPage() {
           title={
             <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span><DollarOutlined /> Thông tin thanh toán</span>
-              <Button
-                type="primary" icon={<PlusOutlined />} size="small"
-                onClick={() => setPaymentModalOpen(true)}
-                disabled={isFullyPaid || order.status === 'COMPLETED'}
-              >
-                Ghi nhận
-              </Button>
+              {isManager && (
+                <Button
+                  type="primary" icon={<PlusOutlined />} size="small"
+                  onClick={() => setPaymentModalOpen(true)}
+                  disabled={isFullyPaid || order.status === 'COMPLETED'}
+                >
+                  Ghi nhận
+                </Button>
+              )}
             </span>
           }
           size="small" style={{ marginBottom: 16 }}
@@ -257,8 +275,8 @@ export default function DeliveryTrackingPage() {
               />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-              <span>${order.amountPaid.toLocaleString()}</span>
-              <span style={{ color: "#9ca3af" }}>/ ${order.totalAmount.toLocaleString()}</span>
+              <span>${(order.amountPaid || 0).toLocaleString()}</span>
+              <span style={{ color: "#9ca3af" }}>/ ${(order.totalAmount || 0).toLocaleString()}</span>
             </div>
           </div>
           <Tag style={{ fontSize: 12, border: "none", borderRadius: 4, padding: "4px 8px" }} color={progressColor}>
@@ -266,8 +284,8 @@ export default function DeliveryTrackingPage() {
           </Tag>
         </Card>
 
-        {/* Actions */}
-        {nextAction && (
+        {/* Actions (Chỉ Manager thấy) */}
+        {isManager && nextAction && (
           <Card title="Hành động" size="small">
             <p>Đơn hàng đang ở trạng thái: <b>{statusInfo.text}</b>.</p>
             <Button
@@ -280,10 +298,17 @@ export default function DeliveryTrackingPage() {
             </Button>
           </Card>
         )}
-        
       </Card>
     );
   };
+
+  if (authLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: "#f3f4f6", minHeight: "100vh", padding: "24px" }}>

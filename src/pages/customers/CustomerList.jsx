@@ -98,16 +98,14 @@ export default function CustomerList() {
           Hồ sơ khách hàng
         </h2>
 
-        {/* Nút "Tạo khách hàng mới" đã bị bạn comment. 
-            Nếu muốn dùng lại, hãy bỏ comment và đặt nó ở đây: */}
-        {/* <Button 
+        <Button 
             type="primary" 
             icon={<PlusOutlined />} 
             onClick={() => setIsModalOpen(true)}
             style={{ marginBottom: 24 }} // Thêm margin
           >
             Tạo khách hàng mới
-          </Button> */}
+          </Button>
 
         {/* Dùng Spin để bao bọc Table */}
         <Spin spinning={loading}>

@@ -21,43 +21,55 @@ import {
   FilePdfOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { createOrder } from "../../api/order";
-// THAY ĐỔI 1: Sửa tên hàm import
-import { getAllCars } from "../../api/car";
+import { createOrder } from "../../api/order.js"; 
+// ❗️ SỬA LỖI: Import từ 'cars.js' (thêm 's')
+import { getCarModelsForSale } from "../../api/cars.js"; 
+import { useAuth } from "../../context/AuthContext.jsx"; 
 
 const { Text } = Typography;
 
 export default function QuotationPage() {
   const [carList, setCarList] = useState([]);
   const [carLoading, setCarLoading] = useState(true);
-  // (Các state khác giữ nguyên)
   const [selectedCar, setSelectedCar] = useState(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [carSelectionError, setCarSelectionError] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  
+  const { user } = useAuth(); 
 
   useEffect(() => {
     const fetchCars = async () => {
       try {
         setCarLoading(true);
-        // THAY ĐỔI 2: Sửa tên hàm gọi
-        const response = await getAllCars(); // Gọi API thật
+        const carModelList = await getCarModelsForSale(); 
 
-        // API (fetch) trả về { carInfoGetDtos: [...] }
-        const carsFromApi = response.carInfoGetDtos || [];
+        const allCarsForSale = [];
+        carModelList.forEach(model => {
+          model.carDetails.forEach(detail => {
+            if (detail.carStatus === "FOR_SALE") {
+              allCarsForSale.push({
+                ...detail,
+                carModelName: model.carModelName,
+                carModelId: model.id, 
+              });
+            }
+          });
+        });
 
-        const formattedCarList = carsFromApi.map((car) => ({
-          key: car.carId,
-          model: car.carName,
-          price: car.price,
+        const formattedCarList = allCarsForSale.map((car) => ({
+          key: car.carDetailId, 
+          modelId: car.carModelId, 
+          modelName: `${car.carModelName} - ${car.carName}`,
+          price: 0, 
         }));
 
         setCarList(formattedCarList);
       } catch (err) {
         message.error(
-          "Lỗi: Không tải được danh sách xe. Vui lòng kiểm tra API '/car/all'."
+          "Lỗi: Không tải được danh sách xe. " + err.message
         );
       } finally {
         setCarLoading(false);
@@ -67,7 +79,6 @@ export default function QuotationPage() {
     fetchCars();
   }, []);
 
-  // (Hàm onFinish và phần còn lại giữ nguyên)
   const onFinish = async (values) => {
     if (!selectedCar) {
       message.error("Vui lòng chọn xe (Bắt buộc)!");
@@ -78,33 +89,26 @@ export default function QuotationPage() {
 
     try {
       setLoading(true);
-
-      const price = selectedCar.price;
-      let finalTotalAmount;
-
-      if (!price || price === 0) {
-        finalTotalAmount = values.totalAmount;
-        if (!finalTotalAmount || finalTotalAmount <= 0) {
-          message.error("Vui lòng nhập Tổng tiền cho xe LIÊN HỆ!");
+      
+      const finalTotalAmount = values.totalAmount;
+      if (!finalTotalAmount || finalTotalAmount <= 0) {
+          message.error("Vui lòng nhập Tổng tiền!");
           setLoading(false);
           return;
-        }
-      } else {
-        const quantity = values.quantity || 1;
-        const discount = values.discount || 0;
-        finalTotalAmount = price * quantity * (1 - discount / 100);
       }
 
+      // Khớp với API (Block 1)
       const payload = {
-        carId: selectedCar.key,
+        carModelId: selectedCar.modelId, 
         customerPhone: values.customerPhone,
+        customerName: values.customerName, 
         totalAmount: finalTotalAmount,
       };
-
-      console.log("✅ Đang gửi payload lên API:", payload);
-
+      
       const response = await createOrder(payload);
-      const orderDetail = response.data; // Giả sử createOrder (dùng apiClient) trả về { data: ... }
+      
+      const orderDetail = response.data || response; 
+      
       message.success(`Tạo đơn hàng #${orderDetail.id} thành công`);
       form.resetFields();
       setSelectedCar(null);
@@ -117,8 +121,6 @@ export default function QuotationPage() {
         message.error(
           `Tạo thất bại: ${err.response.data?.message || err.message}`
         );
-      } else if (err.errorFields) {
-        message.error("Vui lòng điền đầy đủ thông tin!");
       } else {
         message.error(
           "Tạo order thất bại. " + (err.message || "Kiểm tra backend")
@@ -141,14 +143,21 @@ export default function QuotationPage() {
     setCarSelectionError(false);
     form.resetFields(["quantity", "discount", "totalAmount"]);
   };
+  
+  useEffect(() => {
+    if(user && user.fullName) {
+      form.setFieldsValue({ staffName: user.fullName });
+    }
+  }, [user, form]);
+
 
   return (
-    <div style={{ backgroundColor: "#fff", minHeight: "100vh", padding: 40 }}>
+    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
       <div
         style={{
           maxWidth: 1400,
           margin: "0 auto",
-          background: "#f3f0f0ff",
+          background: "#fff",
           borderRadius: 12,
           padding: 24,
         }}
@@ -167,7 +176,7 @@ export default function QuotationPage() {
         <Row gutter={24}>
           <Col span={12}>
             <Card
-              title="1. Chọn xe (Bắt buộc)"
+              title="1. Chọn Mẫu xe"
               style={
                 carSelectionError
                   ? { border: "1px solid #ff4d4f", borderRadius: "8px" }
@@ -179,16 +188,11 @@ export default function QuotationPage() {
                 <Table
                   dataSource={carList}
                   columns={[
-                    { title: "Mẫu xe", dataIndex: "model" },
+                    { title: "Mẫu xe - Tên xe", dataIndex: "modelName" },
                     {
                       title: "Giá ($)",
                       dataIndex: "price",
-                      render: (price) =>
-                        price === 0 ? (
-                          <b style={{ color: "red" }}>LIÊN HỆ</b>
-                        ) : (
-                          price.toLocaleString()
-                        ),
+                      render: (price) => <b style={{ color: "red" }}>LIÊN HỆ</b>,
                     },
                   ]}
                   rowSelection={{
@@ -199,18 +203,29 @@ export default function QuotationPage() {
                     },
                   }}
                   pagination={false}
+                  scroll={{ y: 400 }}
                 />
               </Spin>
             </Card>
           </Col>
           <Col span={12}>
-            <Card title="2. Thông tin đơn hàng (Bắt buộc)">
+            <Card title="2. Thông tin đơn hàng">
               <Form
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
                 onFinishFailed={onValidateFailed}
               >
+                 <Form.Item
+                  label="Tên Khách hàng"
+                  name="customerName"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập Tên khách!" },
+                  ]}
+                >
+                  <Input placeholder="Nhập tên khách hàng (ví dụ: Nguyen Van A)" />
+                </Form.Item>
+                
                 <Form.Item
                   label="SĐT Khách hàng"
                   name="customerPhone"
@@ -221,40 +236,7 @@ export default function QuotationPage() {
                   <Input placeholder="Nhập SĐT (ví dụ: 0901234567)" />
                 </Form.Item>
 
-                {selectedCar && selectedCar.price > 0 && (
-                  <>
-                    <Form.Item
-                      label="Số lượng"
-                      name="quantity"
-                      initialValue={1}
-                      rules={[
-                        { required: true, message: "Vui lòng nhập số lượng!" },
-                      ]}
-                    >
-                      <InputNumber min={1} style={{ width: "100%" }} />
-                    </Form.Item>
-                    <Form.Item
-                      label="Chiết khấu (%)"
-                      name="discount"
-                      initialValue={0}
-                      rules={[
-                        {
-                          required: true,
-                          message:
-                            "Vui lòng nhập chiết khấu (nhập 0 nếu không có)",
-                        },
-                      ]}
-                    >
-                      <InputNumber
-                        min={0}
-                        max={100}
-                        style={{ width: "100%" }}
-                      />
-                    </Form.Item>
-                  </>
-                )}
-
-                {selectedCar && selectedCar.price === 0 && (
+                {selectedCar && (
                   <Form.Item
                     label="Tổng tiền (Do giá LIÊN HỆ)"
                     name="totalAmount"
@@ -276,6 +258,13 @@ export default function QuotationPage() {
                     />
                   </Form.Item>
                 )}
+                
+                <Form.Item
+                  label="Nhân viên phụ trách"
+                  name="staffName"
+                >
+                  <Input disabled />
+                </Form.Item>
 
                 <Form.Item
                   label="Ghi chú"
@@ -290,6 +279,7 @@ export default function QuotationPage() {
                   icon={<SendOutlined />}
                   htmlType="submit"
                   loading={loading}
+                  disabled={!selectedCar} 
                 >
                   Tạo Đơn Hàng
                 </Button>

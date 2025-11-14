@@ -1,47 +1,72 @@
 // src/pages/reports/DebtReport.jsx
 import { Table, Tag, Spin, message } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react"; // 1. THÊM MỚI: Import useMemo
 import { getCustomerDebts } from "../../api/reports";
+import { useAuth } from "../../context/AuthContext"; // 2. THÊM MỚI: Import useAuth
 
 export default function DebtReport() {
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 3. THÊM MỚI: Lấy user và quyền
+  const { user, loading: authLoading } = useAuth();
+  const isManager = useMemo(() => user && user.role === "DEALER_MANAGER", [user]);
+
   useEffect(() => {
-    (async () => {
+    const fetchReport = async () => {
+      if (!user) return; // Chờ user load
       try {
-        // THAY ĐỔI 1: Dữ liệu trả về nằm trong .data
-        const response = await getCustomerDebts();
-        setDebts(response.data);
+        setLoading(true);
+
+        // 4. THÊM MỚI: Logic gán staffId (theo yêu cầu BE)
+        const params = {};
+        if (!isManager) {
+          // Gán staffId nếu là Staff
+          // (Giả sử user.id là ID của Staff)
+          params.staffId = user.id; 
+        }
+        
+        // 5. THAY ĐỔI: Gửi params đi
+        const response = await getCustomerDebts(params); 
+        
+        setDebts(response.data || response || []); // (Sửa lỗi response.data)
       } catch (e) {
         console.error("Lỗi tải công nợ:", e);
-        // Kiểm tra lỗi 401/403 từ interceptor
-        if (e.message.includes("Phiên đăng nhập hết hạn")) {
-          message.error(e.message);
-        } else {
-          message.error("Không tải được công nợ");
-        }
+        message.error("Không tải được công nợ: " + e.message);
       } finally {
         setLoading(false);
       }
-    })();
-  }, []);
+    };
+    
+    // 6. THAY ĐỔI: Chỉ gọi khi user đã sẵn sàng
+    if (!authLoading) {
+        fetchReport();
+    }
 
-  // THAY ĐỔI 2: Cập nhật 'columns' để khớp với API
+  }, [authLoading, user, isManager]); // Thêm dependency
+
   const columns = [
     { title: "Mã KH", dataIndex: "customerId" },
     { title: "Tên Khách hàng", dataIndex: "customerName" },
     {
       title: "Số tiền nợ (VNĐ)",
-      dataIndex: "debt", // API trả về 'debt', không phải 'amount'
+      dataIndex: "debt", 
       render: (a) => (a ? a.toLocaleString("vi-VN") : 0),
     },
     {
       title: "Trạng thái",
-      // API này là báo cáo nợ, nên trạng thái luôn là "Chưa thanh toán"
       render: () => <Tag color="red">CHƯA THANH TOÁN</Tag>,
     },
   ];
+
+  // 7. THÊM MỚI: Loading khi Auth chưa sẵn sàng
+  if (authLoading) {
+     return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: "#ffff", minHeight: "100vh", padding: 40 }}>
@@ -69,7 +94,6 @@ export default function DebtReport() {
         {loading ? (
           <Spin style={{ display: "block", margin: "auto" }} />
         ) : (
-          // THAY ĐỔI 3: Dùng rowKey="customerId"
           <Table columns={columns} dataSource={debts} rowKey="customerId" />
         )}
       </div>
