@@ -24,8 +24,6 @@ import {
 import { deliveriedOrder, finisheddOrder } from "../../api/car.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-const { TabPane } = Tabs;
-
 const statusColors = {
   PENDING: "orange",
   APPROVED: "cyan",
@@ -59,30 +57,29 @@ export default function OrderPage() {
   const [activities, setActivities] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // (Hàm fetchAllOrders giữ nguyên, đã gán staffId)
+  // Fetch all orders
   const fetchAllOrders = async () => {
-    if (!user) return; 
-    
+    if (!user) return;
     setLoading(true);
     try {
-      const statuses = ["PENDING", "APPROVED", "IN_DELIVERY", "COMPLETED", "REJECTED", "CANCELLED"];
-      
+      const statuses = [
+        "PENDING",
+        "APPROVED",
+        "IN_DELIVERY",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED",
+      ];
       const baseParams = {};
-      if (!isManager) {
-        baseParams.staffId = user.id; 
-      }
+      if (!isManager) baseParams.staffId = user.id;
 
       const responses = await Promise.all(
-        statuses.map(status => {
-          const params = { ...baseParams, status };
-          return getListOrders(params); 
-        })
+        statuses.map((status) => getListOrders({ ...baseParams, status }))
       );
 
       const newOrders = {};
-      responses.forEach((res, index) => {
-        const status = statuses[index];
-        newOrders[status] = res.data || res || [];
+      responses.forEach((res, idx) => {
+        newOrders[statuses[idx]] = res.data || res || [];
       });
 
       setOrders(newOrders);
@@ -94,12 +91,10 @@ export default function OrderPage() {
   };
 
   useEffect(() => {
-    if (!authLoading && user) {
-      fetchAllOrders();
-    }
-  }, [authLoading, user]); 
+    if (!authLoading && user) fetchAllOrders();
+  }, [authLoading, user]);
 
-  // (Các hàm openDetail, handleUpdateStatus giữ nguyên)
+  // Open modal
   const openDetail = async (record) => {
     if (!user) return;
     setOpen(true);
@@ -108,13 +103,13 @@ export default function OrderPage() {
     setActivities([]);
 
     try {
-      const [detailResponse, activityResponse] = await Promise.all([
+      const [detailRes, activityRes] = await Promise.all([
         getOrderById(record.id),
         getOrderActivities(record.id),
       ]);
-      setSelected(detailResponse.data || detailResponse);
+      setSelected(detailRes.data || detailRes);
       setActivities(
-        activityResponse.data?.activities || activityResponse.activities || []
+        activityRes.data?.activities || activityRes.activities || []
       );
     } catch {
       message.error("Lỗi khi lấy chi tiết đơn");
@@ -123,10 +118,10 @@ export default function OrderPage() {
     }
   };
 
+  // Update order status
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      const payload = { status: newStatus };
-      await updateOrder(id, payload);
+      await updateOrder(id, { status: newStatus });
       message.success(`Đơn hàng #${id} đã được chuyển sang ${newStatus}`);
       fetchAllOrders();
       setOpen(false);
@@ -135,16 +130,43 @@ export default function OrderPage() {
     }
   };
 
-  // (getBaseColumns giữ nguyên)
+  // Delivered / Finished
+  const handleDelivered = async () => {
+    if (!selected) return;
+    try {
+      await deliveriedOrder(selected.id, selected.carDetail.carId);
+      message.success("Đã xác nhận đơn hàng đã giao!");
+      fetchAllOrders();
+      setOpen(false);
+    } catch (err) {
+      message.error("Lỗi khi cập nhật trạng thái: " + (err.message || "Lỗi"));
+    }
+  };
+
+  const handleFinished = async () => {
+    if (!selected) return;
+    try {
+      await finisheddOrder(selected.id, selected.carDetail.carId);
+      message.success("Đơn hàng đã hoàn thành!");
+      fetchAllOrders();
+      setOpen(false);
+    } catch (err) {
+      message.error("Lỗi khi cập nhật trạng thái: " + (err.message || "Lỗi"));
+    }
+  };
+
+  // Columns
   const getBaseColumns = () => [
     { title: "Mã đơn", dataIndex: "id" },
     { title: "Khách hàng", dataIndex: ["customer", "fullName"] },
-    { 
-      title: "Tên xe", 
-      render: (record) => 
-        record.carDetail?.carName || record.carModelGetDetailDto?.carModelName || "N/A"
-    }, 
-    { title: "Nhân viên", dataIndex: ["staff", "fullName"] }, 
+    {
+      title: "Tên xe",
+      render: (record) =>
+        record.carDetail?.carName ||
+        record.carModelGetDetailDto?.carModelName ||
+        "N/A",
+    },
+    { title: "Nhân viên", dataIndex: ["staff", "fullName"] },
     {
       title: "Tổng tiền (₫)",
       dataIndex: "totalAmount",
@@ -194,8 +216,6 @@ export default function OrderPage() {
               </Button>
               {isManager && (
                 <>
-                  {/* ❗️❗️ ĐÃ XÓA NÚT "DUYỆT" Ở ĐÂY ❗️❗️ */}
-
                   <Popconfirm
                     title="Bạn chắc chắn muốn TỪ CHỐI?"
                     onConfirm={() => handleUpdateStatus(record.id, "REJECTED")}
@@ -227,7 +247,6 @@ export default function OrderPage() {
     return [...baseColumns, actionColumn];
   };
 
-  // (Memo các cột)
   const pendingColumns = useMemo(
     () => getColumns("PENDING", isManager),
     [isManager]
@@ -253,7 +272,6 @@ export default function OrderPage() {
     [isManager]
   );
 
-  // (Loading Auth giữ nguyên)
   if (authLoading) {
     return (
       <div
@@ -269,7 +287,88 @@ export default function OrderPage() {
     );
   }
 
-  // (Return JSX giữ nguyên)
+  // Tab items
+  const tabItems = [
+    {
+      key: "PENDING",
+      label: `Chờ duyệt (${orders.PENDING.length})`,
+      children: (
+        <Spin spinning={loading}>
+          <Table
+            columns={pendingColumns}
+            dataSource={orders.PENDING}
+            rowKey="id"
+          />
+        </Spin>
+      ),
+    },
+    {
+      key: "APPROVED",
+      label: `Đã duyệt (${orders.APPROVED.length})`,
+      children: (
+        <Spin spinning={loading}>
+          <Table
+            columns={approvedColumns}
+            dataSource={orders.APPROVED}
+            rowKey="id"
+          />
+        </Spin>
+      ),
+    },
+    {
+      key: "IN_DELIVERY",
+      label: `Đang giao (${orders.IN_DELIVERY.length})`,
+      children: (
+        <Spin spinning={loading}>
+          <Table
+            columns={inDeliveryColumns}
+            dataSource={orders.IN_DELIVERY}
+            rowKey="id"
+          />
+        </Spin>
+      ),
+    },
+    {
+      key: "COMPLETED",
+      label: `Hoàn thành (${orders.COMPLETED.length})`,
+      children: (
+        <Spin spinning={loading}>
+          <Table
+            columns={completedColumns}
+            dataSource={orders.COMPLETED}
+            rowKey="id"
+          />
+        </Spin>
+      ),
+    },
+    {
+      key: "REJECTED",
+      label: `Bị từ chối (${orders.REJECTED.length})`,
+      children: (
+        <Spin spinning={loading}>
+          <Table
+            columns={rejectedColumns}
+            dataSource={orders.REJECTED}
+            rowKey="id"
+          />
+        </Spin>
+      ),
+    },
+    {
+      key: "CANCELLED",
+      label: `Đã hủy (${orders.CANCELLED.length})`,
+      children: (
+        <Spin spinning={loading}>
+          <Table
+            columns={cancelledColumns}
+            dataSource={orders.CANCELLED}
+            rowKey="id"
+          />
+        </Spin>
+      ),
+    },
+  ];
+
   return (
     <div
       style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}
@@ -285,79 +384,20 @@ export default function OrderPage() {
       >
         <h2
           style={{
-            fontSize: 25, fontWeight: 700, color: "#059669",
-            margin: 0, display: "flex", alignItems: "center",
-            justifyContent: "center", gap: 8,
+            fontSize: 25,
+            fontWeight: 700,
+            color: "#059669",
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
           }}
         >
           Quản lý đơn hàng
         </h2>
 
-        <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
-          <TabPane tab={`Chờ duyệt (${orders.PENDING.length})`} key="PENDING">
-            <Spin spinning={loading}>
-              <Table
-                columns={pendingColumns}
-                dataSource={orders.PENDING}
-                rowKey="id"
-              />
-            </Spin>
-          </TabPane>
-          <TabPane tab={`Đã duyệt (${orders.APPROVED.length})`} key="APPROVED">
-            <Spin spinning={loading}>
-              <Table
-                columns={approvedColumns}
-                dataSource={orders.APPROVED}
-                rowKey="id"
-              />
-            </Spin>
-          </TabPane>
-          <TabPane
-            tab={`Đang giao (${orders.IN_DELIVERY.length})`}
-            key="IN_DELIVERY"
-          >
-            <Spin spinning={loading}>
-              <Table
-                columns={inDeliveryColumns}
-                dataSource={orders.IN_DELIVERY}
-                rowKey="id"
-              />
-            </Spin>
-          </TabPane>
-          <TabPane
-            tab={`Hoàn thành (${orders.COMPLETED.length})`}
-            key="COMPLETED"
-          >
-            <Spin spinning={loading}>
-              <Table
-                columns={completedColumns}
-                dataSource={orders.COMPLETED}
-                rowKey="id"
-              />
-            </Spin>
-          </TabPane>
-          <TabPane
-            tab={`Bị từ chối (${orders.REJECTED.length})`}
-            key="REJECTED"
-          >
-            <Spin spinning={loading}>
-              <Table
-                columns={rejectedColumns}
-                dataSource={orders.REJECTED}
-                rowKey="id"
-              />
-            </Spin>
-          </TabPane>
-          <TabPane tab={`Đã hủy (${orders.CANCELLED.length})`} key="CANCELLED">
-            <Spin spinning={loading}>
-              <Table
-                columns={cancelledColumns}
-                dataSource={orders.CANCELLED}
-                rowKey="id"
-              />
-            </Spin>
-          </TabPane>
-        </Tabs>
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
         <Modal
           open={open}
@@ -370,17 +410,39 @@ export default function OrderPage() {
             <Spin />
           ) : (
             selected && (
-              <Row gutter={24}>
-                <Col span={12}>
-                  <h4>Thông tin chính</h4>
-                  <p><b>Mã đơn:</b> {selected.id}</p>
-                  <p><b>Khách hàng:</b> {selected.customer?.fullName}</p>
-                  <p><b>Liên hệ (KH):</b> {selected.customer?.phone}</p>
-                  <p><b>Xe:</b> {selected.carDetail?.carName || selected.carModelGetDetailDto?.carModelName || "N/A"}</p> 
-                  <p><b>Nhân viên phụ trách:</b> {selected.staff?.fullName}</p>
-                  <p><b>Tổng tiền:</b> {selected.totalAmount?.toLocaleString()} ₫</p>
-                  <p><b>Trạng thái:</b> <Tag color={statusColors[selected.status] || 'default'}>{selected.status}</Tag></p>
-                </Col>
+              <>
+                <Row gutter={24}>
+                  <Col span={12}>
+                    <h4>Thông tin chính</h4>
+                    <p>
+                      <b>Mã đơn:</b> {selected.id}
+                    </p>
+                    <p>
+                      <b>Khách hàng:</b> {selected.customer?.fullName}
+                    </p>
+                    <p>
+                      <b>Liên hệ (KH):</b> {selected.customer?.phone}
+                    </p>
+                    <p>
+                      <b>Xe:</b>{" "}
+                      {selected.carDetail?.carName ||
+                        selected.carModelGetDetailDto?.carModelName ||
+                        "N/A"}
+                    </p>
+                    <p>
+                      <b>Nhân viên phụ trách:</b> {selected.staff?.fullName}
+                    </p>
+                    <p>
+                      <b>Tổng tiền:</b> {selected.totalAmount?.toLocaleString()}{" "}
+                      ₫
+                    </p>
+                    <p>
+                      <b>Trạng thái:</b>{" "}
+                      <Tag color={statusColors[selected.status] || "default"}>
+                        {selected.status}
+                      </Tag>
+                    </p>
+                  </Col>
 
                   <Col span={12}>
                     <h4>Lịch sử đơn hàng</h4>
@@ -425,7 +487,7 @@ export default function OrderPage() {
                     </Button>
                   )}
 
-                  {selected.status === "DELIVERIED" && (
+                  {selected.status === "DELIVERED" && (
                     <Button
                       type="primary"
                       style={{ backgroundColor: "#10b981" }}

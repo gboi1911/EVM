@@ -163,7 +163,7 @@ export const deliveryOrder = async (orderId, carDetailId) => {
 export const deliveriedOrder = async (orderId, carDetailId) => {
   const token = localStorage.getItem("access_token");
   const response = await fetch(
-    `${API_BASE}/orders/approve-order?orderId=${orderId}&carDetailId=${carDetailId}&orderStatus=DELIVERIED`,
+    `${API_BASE}/orders/approve-order?orderId=${orderId}&carDetailId=${carDetailId}&orderStatus=DELIVERED`,
     {
       method: "PATCH",
       headers: {
