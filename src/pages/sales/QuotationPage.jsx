@@ -164,10 +164,9 @@ export default function QuotationPage() {
       >
         <h2
           style={{
-            fontWeight: 700,
-            color: "#059669",
-            textAlign: "center",
-            marginBottom: 24,
+            fontSize: 25, fontWeight: 700, color: "#059669",
+            margin: 0, display: "flex", alignItems: "center",
+            justifyContent: "center", gap: 8,
           }}
         >
           Tạo báo giá / Đơn hàng
@@ -190,7 +189,7 @@ export default function QuotationPage() {
                   columns={[
                     { title: "Mẫu xe - Tên xe", dataIndex: "modelName" },
                     {
-                      title: "Giá ($)",
+                      title: "Giá (₫)",
                       dataIndex: "price",
                       render: (price) => <b style={{ color: "red" }}>LIÊN HỆ</b>,
                     },
@@ -251,9 +250,9 @@ export default function QuotationPage() {
                       min={1}
                       style={{ width: "100%" }}
                       formatter={(value) =>
-                        `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        `₫ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                      parser={(value) => value.replace(/\₫\s?|(,*)/g, "")}
                       placeholder="Nhập tổng tiền (ví dụ: 50000)"
                     />
                   </Form.Item>
