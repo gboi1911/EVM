@@ -61,7 +61,7 @@ export default function PaymentPage() {
         record.carDetail?.carName || record.carModelGetDetailDto?.carModelName || "N/A"
     },
     {
-      title: "Số tiền ($)",
+      title: "Số tiền (₫)",
       dataIndex: "totalAmount",
       render: (v) => (v ? v.toLocaleString() : 0),
     },
@@ -88,10 +88,9 @@ export default function PaymentPage() {
     <div style={{ padding: 24, background: '#fff', borderRadius: 12, margin: '40px auto', maxWidth: 1200 }}>
       <h2
         style={{
-          fontWeight: 700,
-          color: "#059669",
-          textAlign: "center",
-          marginBottom: 24,
+         fontSize: 25, fontWeight: 700, color: "#059669",
+            margin: 0, display: "flex", alignItems: "center",
+            justifyContent: "center", gap: 8,
         }}
       >
         Thanh toán & Doanh thu (Đơn đã hoàn thành)
@@ -107,7 +106,7 @@ export default function PaymentPage() {
                 <Statistic
                   title="Tổng doanh thu (Completed)"
                   value={total}
-                  suffix="$"
+                  suffix="₫"
                 />
               </Card>
             </Col>

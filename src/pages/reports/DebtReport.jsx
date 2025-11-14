@@ -49,7 +49,7 @@ export default function DebtReport() {
     { title: "Mã KH", dataIndex: "customerId" },
     { title: "Tên Khách hàng", dataIndex: "customerName" },
     {
-      title: "Số tiền nợ (VNĐ)",
+      title: "Số tiền nợ (₫)",
       dataIndex: "debt", 
       render: (a) => (a ? a.toLocaleString("vi-VN") : 0),
     },
