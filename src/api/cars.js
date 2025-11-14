@@ -39,7 +39,7 @@ export const getAllCars = async (params) => {
 
 export const createCar = async (carData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/car/create`, {
+  const response = await fetch(`${API_BASE}/carDetail/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -55,7 +55,7 @@ export const createCar = async (carData) => {
 
 export const updateCar = async (carId, carData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/car/${carId}/update`, {
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/update`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -76,7 +76,7 @@ export const postImageForCar = async (carId, files) => {
   // files: array of File objects
   files.forEach((f) => formData.append("files", f));
 
-  const response = await fetch(`${API_BASE}/car/${carId}/upload/images`, {
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/upload/images`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

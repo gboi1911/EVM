@@ -3,7 +3,7 @@ import { API_BASE } from "../config/api";
 
 export const fetchCategories = async () => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/category/all`, {
+  const response = await fetch(`${API_BASE}/carDetail-model/all`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -19,7 +19,7 @@ export const fetchCategories = async () => {
 
 export const addCategory = async ({ categoryName }) => {
   const token = localStorage.getItem("access_token");
-  const url = `${API_BASE}/category/create?categoryName=${encodeURIComponent(
+  const url = `${API_BASE}/carDetail-model/create?carModelName=${encodeURIComponent(
     categoryName
   )}`;
 
@@ -59,7 +59,7 @@ export const updateCategory = async (categoryId, categoryData) => {
 
 export const removeCategory = async (categoryId) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/category/${categoryId}/remove`, {
+  const response = await fetch(`${API_BASE}/carDetail-model/remove/${carModelId}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",

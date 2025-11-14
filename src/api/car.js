@@ -3,7 +3,7 @@ import { API_BASE } from "../config/api";
 
 export const getCarDetails = async (carId) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/car/${carId}/detail`, {
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/detail`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -19,7 +19,7 @@ export const getCarDetails = async (carId) => {
 export const getAllCars = async (pageNo = 0, pageSize = 10) => {
   const token = localStorage.getItem("access_token");
   const response = await fetch(
-    `${API_BASE}/car/all?pageNo=${pageNo}&pageSize=${pageSize}`,
+    `${API_BASE}/carDetail/all?pageNo=${pageNo}&pageSize=${pageSize}`,
     {
       method: "GET",
       headers: {
@@ -36,7 +36,7 @@ export const getAllCars = async (pageNo = 0, pageSize = 10) => {
 
 export const createCar = async (carData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/car/create`, {
+  const response = await fetch(`${API_BASE}/carDetail/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -52,7 +52,7 @@ export const createCar = async (carData) => {
 
 export const updateCar = async (carId, carData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/car/${carId}/update`, {
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/update`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -73,7 +73,7 @@ export const postImageForCar = async (carId, files) => {
   // files: array of File objects
   files.forEach((f) => formData.append("files", f));
 
-  const response = await fetch(`${API_BASE}/car/${carId}/upload/images`, {
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/upload/images`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

@@ -73,6 +73,7 @@ export default function ManagePrice() {
 
     if (record) {
       const details = await getPriceDetailsById(record.priceProgramId);
+
       form.setFieldsValue({
         dealerHierarchy: details.dealerHierarchy,
         startDate: moment(details.startDay),
@@ -99,8 +100,8 @@ export default function ManagePrice() {
       const values = await form.validateFields();
       setLoading(true);
 
-      const startDay = values.startDate.format("YYYY-MM-DDTHH:mm:ssZ");
-      const endDay = values.endDate.format("YYYY-MM-DDTHH:mm:ssZ");
+      const startDay = values.startDate.toISOString();
+      const endDay = values.endDate.toISOString();
 
       const requestBody = {
         dealerHierarchy: values.dealerHierarchy,
@@ -109,18 +110,36 @@ export default function ManagePrice() {
       };
 
       if (editing) {
+        // Update
         await updatePriceById(editing.priceProgramId, requestBody);
+
         setData((prev) =>
           prev.map((item) =>
             item.priceProgramId === editing.priceProgramId
-              ? { ...item, ...requestBody }
+              ? {
+                  ...item,
+                  dealerHierarchy: values.dealerHierarchy,
+                  startDate: startDay,
+                  endDate: endDay,
+                }
               : item
           )
         );
+
         notification.success({ message: "Cập nhật thành công!" });
       } else {
+        // Create
         const added = await createPrice(requestBody);
-        setData((prev) => [...prev, added]);
+
+        setData((prev) => [
+          ...prev,
+          {
+            ...added,
+            startDate: startDay,
+            endDate: endDay,
+          },
+        ]);
+
         notification.success({ message: "Thêm mới thành công!" });
       }
 

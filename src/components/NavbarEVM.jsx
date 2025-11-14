@@ -35,11 +35,11 @@ const items = [
         icon: <CarOutlined />,
         label: "Quản lý xe điện",
       },
-      {
-        key: "motorbike",
-        icon: <DashboardOutlined />,
-        label: "Quản lý động cơ",
-      },
+      // {
+      //   key: "motorbike",
+      //   icon: <DashboardOutlined />,
+      //   label: "Quản lý động cơ",
+      // },
       {
         key: "inventory",
         icon: <ClusterOutlined />,
