@@ -1,9 +1,19 @@
 // src/pages/sales/OrderPage.jsx
 import {
-  Table, Button, Tag, Modal, Spin, message, Space, Timeline, Row, Col,
-  Tabs, Popconfirm
+  Table,
+  Button,
+  Tag,
+  Modal,
+  Spin,
+  message,
+  Space,
+  Timeline,
+  Row,
+  Col,
+  Tabs,
+  Popconfirm,
 } from "antd";
-import { useEffect, useState, useMemo } from "react"; 
+import { useEffect, useState, useMemo } from "react";
 import { FilePdfOutlined } from "@ant-design/icons";
 import {
   getListOrders,
@@ -11,6 +21,7 @@ import {
   updateOrder,
   getOrderActivities,
 } from "../../api/order.js";
+import { deliveriedOrder, finisheddOrder } from "../../api/car.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const { TabPane } = Tabs;
@@ -26,7 +37,10 @@ const statusColors = {
 
 export default function OrderPage() {
   const { user, loading: authLoading } = useAuth();
-  const isManager = useMemo(() => user && user.role === "DEALER_MANAGER", [user]);
+  const isManager = useMemo(
+    () => user && user.role === "DEALER_MANAGER",
+    [user]
+  );
 
   const [orders, setOrders] = useState({
     PENDING: [],
@@ -48,21 +62,28 @@ export default function OrderPage() {
   // ❗️ SỬA LỖI 403 (Theo yêu cầu BE)
   const fetchAllOrders = async () => {
     if (!user) return; // Chờ user load xong
-    
+
     setLoading(true);
     try {
-      const statuses = ["PENDING", "APPROVED", "IN_DELIVERY", "COMPLETED", "REJECTED", "CANCELLED"];
-      
+      const statuses = [
+        "PENDING",
+        "APPROVED",
+        "IN_DELIVERY",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED",
+      ];
+
       // 1. Tạo param cơ sở
       const baseParams = {};
       if (!isManager) {
         // Gán staffId nếu là Staff
         // (Giả sử user object từ useAuth() có 'id' khớp với 'staff.id' trong API)
-        baseParams.staffId = user.id; 
+        baseParams.staffId = user.id;
       }
-      
+
       const responses = await Promise.all(
-        statuses.map(status => {
+        statuses.map((status) => {
           // 2. Gộp status và staffId
           const params = { ...baseParams, status };
           return getListOrders(params); // Gửi API với params
@@ -72,11 +93,10 @@ export default function OrderPage() {
       const newOrders = {};
       responses.forEach((res, index) => {
         const status = statuses[index];
-        newOrders[status] = res.data || res || []; 
+        newOrders[status] = res.data || res || [];
       });
-      
-      setOrders(newOrders);
 
+      setOrders(newOrders);
     } catch (e) {
       // (Lỗi 403 sẽ hiển thị ở đây cho đến khi BE sửa)
       message.error("Không tải được danh sách đơn hàng: " + e.message);
@@ -105,9 +125,7 @@ export default function OrderPage() {
       ]);
       setSelected(detailResponse.data || detailResponse);
       setActivities(
-        activityResponse.data?.activities ||
-          activityResponse.activities ||
-          []
+        activityResponse.data?.activities || activityResponse.activities || []
       );
     } catch {
       message.error("Lỗi khi lấy chi tiết đơn");
@@ -121,10 +139,51 @@ export default function OrderPage() {
       const payload = { status: newStatus };
       await updateOrder(id, payload);
       message.success(`Đơn hàng #${id} đã được chuyển sang ${newStatus}`);
-      fetchAllOrders(); 
-      setOpen(false); 
+      fetchAllOrders();
+      setOpen(false);
     } catch (err) {
       message.error("Cập nhật trạng thái thất bại: " + (err.message || "Lỗi"));
+    }
+  };
+
+  const handleDelivered = async () => {
+    if (!selected) return;
+
+    const carId = selected.carDetail.carId;
+
+    console.log("orderId", selected.id);
+    console.log("carDetailId", carId);
+
+    const payload = {
+      orderId: selected.id,
+      carId: carId,
+    };
+
+    try {
+      await deliveriedOrder(payload.orderId, payload.carId);
+      message.success("Đã xác nhận đơn hàng đã giao!");
+      fetchAllOrders();
+      setOpen(false);
+    } catch (err) {
+      message.error("Lỗi khi cập nhật trạng thái: " + (err.message || "Lỗi"));
+    }
+  };
+
+  const handleFinished = async () => {
+    if (!selected) return;
+
+    const payload = {
+      orderId: selected.id,
+      carId: selected.carDetail.carId, // Lấy carId từ modal
+    };
+
+    try {
+      await finisheddOrder(payload.orderId, payload.carId);
+      message.success("Đơn hàng đã hoàn thành!");
+      fetchAllOrders();
+      setOpen(false);
+    } catch (err) {
+      message.error("Lỗi khi cập nhật trạng thái: " + (err.message || "Lỗi"));
     }
   };
 
@@ -132,13 +191,15 @@ export default function OrderPage() {
   const getBaseColumns = () => [
     { title: "Mã đơn", dataIndex: "id" },
     { title: "Khách hàng", dataIndex: ["customer", "fullName"] },
-    { 
-      title: "Tên xe", 
+    {
+      title: "Tên xe",
       // Đọc 'carDetail' (cho đơn đã gán xe) HOẶC 'carModelGetDetailDto' (cho đơn báo giá)
-      render: (record) => 
-        record.carDetail?.carName || record.carModelGetDetailDto?.carModelName || "N/A"
-    }, 
-    { title: "Nhân viên", dataIndex: ["staff", "fullName"] }, 
+      render: (record) =>
+        record.carDetail?.carName ||
+        record.carModelGetDetailDto?.carModelName ||
+        "N/A",
+    },
+    { title: "Nhân viên", dataIndex: ["staff", "fullName"] },
     {
       title: "Tổng tiền ($)",
       dataIndex: "totalAmount",
@@ -147,7 +208,7 @@ export default function OrderPage() {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      render: (s) => <Tag color={statusColors[s] || 'default'}>{s}</Tag>,
+      render: (s) => <Tag color={statusColors[s] || "default"}>{s}</Tag>,
     },
   ];
 
@@ -161,18 +222,16 @@ export default function OrderPage() {
             Xem
           </Button>
           {isManager && (tabKey === "APPROVED" || tabKey === "IN_DELIVERY") && (
-             <Popconfirm
-                title="Bạn chắc chắn muốn HỦY đơn này?"
-                onConfirm={() =>
-                  handleUpdateStatus(record.id, "CANCELLED")
-                }
-                okText="Đúng, hủy"
-                cancelText="Không"
-              >
-                <Button type="link" danger>
-                  Hủy
-                </Button>
-              </Popconfirm>
+            <Popconfirm
+              title="Bạn chắc chắn muốn HỦY đơn này?"
+              onConfirm={() => handleUpdateStatus(record.id, "CANCELLED")}
+              okText="Đúng, hủy"
+              cancelText="Không"
+            >
+              <Button type="link" danger>
+                Hủy
+              </Button>
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -193,17 +252,13 @@ export default function OrderPage() {
                   <Button
                     type="link"
                     style={{ color: "green" }}
-                    onClick={() =>
-                      handleUpdateStatus(record.id, "APPROVED")
-                    }
+                    onClick={() => handleUpdateStatus(record.id, "APPROVED")}
                   >
                     Duyệt
                   </Button>
                   <Popconfirm
                     title="Bạn chắc chắn muốn TỪ CHỐI?"
-                    onConfirm={() =>
-                      handleUpdateStatus(record.id, "REJECTED")
-                    }
+                    onConfirm={() => handleUpdateStatus(record.id, "REJECTED")}
                     okText="Đúng, từ chối"
                     cancelText="Không"
                   >
@@ -213,9 +268,7 @@ export default function OrderPage() {
                   </Popconfirm>
                   <Popconfirm
                     title="Bạn chắc chắn muốn HỦY?"
-                    onConfirm={() =>
-                      handleUpdateStatus(record.id, "CANCELLED")
-                    }
+                    onConfirm={() => handleUpdateStatus(record.id, "CANCELLED")}
                     okText="Đúng, hủy"
                     cancelText="Không"
                   >
@@ -230,7 +283,7 @@ export default function OrderPage() {
         },
       ];
     }
-    
+
     return [...baseColumns, actionColumn];
   };
 
@@ -276,7 +329,9 @@ export default function OrderPage() {
   }
 
   return (
-    <div style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}>
+    <div
+      style={{ backgroundColor: "#1f2937", minHeight: "100vh", padding: 40 }}
+    >
       <div
         style={{
           maxWidth: 1200,
@@ -298,10 +353,7 @@ export default function OrderPage() {
         </h2>
 
         <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)}>
-          <TabPane
-            tab={`Chờ duyệt (${orders.PENDING.length})`}
-            key="PENDING"
-          >
+          <TabPane tab={`Chờ duyệt (${orders.PENDING.length})`} key="PENDING">
             <Spin spinning={loading}>
               <Table
                 columns={pendingColumns}
@@ -310,10 +362,7 @@ export default function OrderPage() {
               />
             </Spin>
           </TabPane>
-          <TabPane
-            tab={`Đã duyệt (${orders.APPROVED.length})`}
-            key="APPROVED"
-          >
+          <TabPane tab={`Đã duyệt (${orders.APPROVED.length})`} key="APPROVED">
             <Spin spinning={loading}>
               <Table
                 columns={approvedColumns}
@@ -322,7 +371,7 @@ export default function OrderPage() {
               />
             </Spin>
           </TabPane>
-           <TabPane
+          <TabPane
             tab={`Đang giao (${orders.IN_DELIVERY.length})`}
             key="IN_DELIVERY"
           >
@@ -334,7 +383,7 @@ export default function OrderPage() {
               />
             </Spin>
           </TabPane>
-           <TabPane
+          <TabPane
             tab={`Hoàn thành (${orders.COMPLETED.length})`}
             key="COMPLETED"
           >
@@ -358,10 +407,7 @@ export default function OrderPage() {
               />
             </Spin>
           </TabPane>
-          <TabPane
-            tab={`Đã hủy (${orders.CANCELLED.length})`}
-            key="CANCELLED"
-          >
+          <TabPane tab={`Đã hủy (${orders.CANCELLED.length})`} key="CANCELLED">
             <Spin spinning={loading}>
               <Table
                 columns={cancelledColumns}
@@ -383,46 +429,95 @@ export default function OrderPage() {
             <Spin />
           ) : (
             selected && (
-              <Row gutter={24}>
-                <Col span={12}>
-                  <h4>Thông tin chính</h4>
-                  <p><b>Mã đơn:</b> {selected.id}</p>
-                  <p><b>Khách hàng:</b> {selected.customer?.fullName}</p>
-                  <p><b>Liên hệ (KH):</b> {selected.customer?.phone}</p>
-                  <p><b>Xe:</b> {selected.carDetail?.carName || selected.carModelGetDetailDto?.carModelName || "N/A"}</p> 
-                  <p><b>Nhân viên phụ trách:</b> {selected.staff?.fullName}</p>
-                  <p><b>Tổng tiền:</b> {selected.totalAmount?.toLocaleString()} $</p>
-                  <p><b>Trạng thái:</b> <Tag color={statusColors[selected.status] || 'default'}>{selected.status}</Tag></p>
-                </Col>
+              <>
+                <Row gutter={24}>
+                  <Col span={12}>
+                    <h4>Thông tin chính</h4>
+                    <p>
+                      <b>Mã đơn:</b> {selected.id}
+                    </p>
+                    <p>
+                      <b>Khách hàng:</b> {selected.customer?.fullName}
+                    </p>
+                    <p>
+                      <b>Liên hệ (KH):</b> {selected.customer?.phone}
+                    </p>
+                    <p>
+                      <b>Xe:</b>{" "}
+                      {selected.carDetail?.carName ||
+                        selected.carModelGetDetailDto?.carModelName ||
+                        "N/A"}
+                    </p>
+                    <p>
+                      <b>Nhân viên phụ trách:</b> {selected.staff?.fullName}
+                    </p>
+                    <p>
+                      <b>Tổng tiền:</b> {selected.totalAmount?.toLocaleString()}{" "}
+                      $
+                    </p>
 
-                <Col span={12}>
-                  <h4>Lịch sử đơn hàng</h4>
-                  <Timeline
-                    items={activities.map((act) => ({
-                      color: statusColors[act.status] || 'gray',
-                      children: `${act.status} - ${new Date(act.changedAt).toLocaleString("vi-VN")}`,
-                    }))}
-                  />
-                  <Space direction="vertical" style={{ marginTop: 24, width: "100%" }}>
-                    <Button
-                      icon={<FilePdfOutlined />}
-                      href={selected.quotationUrl}
-                      target="_blank"
-                      disabled={!selected.quotationUrl}
+                    <p>
+                      <b>Trạng thái:</b>{" "}
+                      <Tag color={statusColors[selected.status] || "default"}>
+                        {selected.status}
+                      </Tag>
+                    </p>
+                  </Col>
+
+                  <Col span={12}>
+                    <h4>Lịch sử đơn hàng</h4>
+                    <Timeline
+                      items={activities.map((act) => ({
+                        color: statusColors[act.status] || "gray",
+                        children: `${act.status} - ${new Date(
+                          act.changedAt
+                        ).toLocaleString("vi-VN")}`,
+                      }))}
+                    />
+
+                    <Space
+                      direction="vertical"
+                      style={{ marginTop: 24, width: "100%" }}
                     >
-                      Xem Báo giá
+                      <Button
+                        icon={<FilePdfOutlined />}
+                        href={selected.quotationUrl}
+                        target="_blank"
+                        disabled={!selected.quotationUrl}
+                      >
+                        Xem Báo giá
+                      </Button>
+
+                      <Button
+                        icon={<FilePdfOutlined />}
+                        href={selected.contractUrl}
+                        target="_blank"
+                        disabled={!selected.contractUrl}
+                      >
+                        Xem Hợp đồng
+                      </Button>
+                    </Space>
+                  </Col>
+                </Row>
+
+                <div style={{ marginTop: 24, textAlign: "right" }}>
+                  {selected.status === "IN_DELIVERY" && (
+                    <Button type="primary" onClick={handleDelivered}>
+                      Xác nhận đã giao
                     </Button>
+                  )}
+
+                  {selected.status === "DELIVERIED" && (
                     <Button
-                      icon={<FilePdfOutlined />}
-                      href={selected.contractUrl}
-                      target="_blank"
-                      disabled={!selected.contractUrl}
+                      type="primary"
+                      style={{ backgroundColor: "#10b981" }}
+                      onClick={handleFinished}
                     >
-                      Xem Hợp đồng
+                      Xác nhận hoàn thành
                     </Button>
-                  </Space>
-                </Col>
-              </Row>
+                  )}
+                </div>
+              </>
             )
           )}
         </Modal>

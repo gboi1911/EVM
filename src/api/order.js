@@ -44,6 +44,12 @@ export const getOrderPending = () => {
   return apiClient.get("/orders/pending");
 };
 
+export const getOrderByStatus = (status) => {
+  return apiClient.get(
+    `/orders/status?orderStatus=${status}&pageNo=0&pageSize=10`
+  );
+};
+
 // export const approveOrder = (orderId, carDetailId, orderStatus) => {
 //   return apiClient.patch("/orders/approve-order");
 // };

@@ -140,3 +140,60 @@ export const approveOrder = async (orderId, carDetailId) => {
   }
   return await response.json();
 };
+
+export const deliveryOrder = async (orderId, carDetailId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/orders/approve-order?orderId=${orderId}&carDetailId=${carDetailId}&orderStatus=IN_DELIVERY`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      // body: JSON.stringify(orderData),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Order approval failed");
+  }
+  return await response.json();
+};
+
+export const deliveriedOrder = async (orderId, carDetailId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/orders/approve-order?orderId=${orderId}&carDetailId=${carDetailId}&orderStatus=DELIVERIED`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      // body: JSON.stringify(orderData),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Order approval failed");
+  }
+  return await response.json();
+};
+
+export const finisheddOrder = async (orderId, carDetailId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/orders/approve-order?orderId=${orderId}&carDetailId=${carDetailId}&orderStatus=COMPLETED`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      // body: JSON.stringify(orderData),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Order approval failed");
+  }
+  return await response.json();
+};

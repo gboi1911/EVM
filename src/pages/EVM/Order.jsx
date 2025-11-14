@@ -1,32 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, message, Tag, Descriptions } from "antd";
-import { getOrderPending } from "../../api/order";
-import { getRandomCarByModel, approveOrder } from "../../api/car";
+import { Table, Button, Modal, message, Tag, Descriptions, Tabs } from "antd";
+import { getOrderPending, getOrderByStatus } from "../../api/order";
+import {
+  getRandomCarByModel,
+  approveOrder,
+  deliveryOrder,
+} from "../../api/car";
 
-const OrderPendingPage = () => {
-  const [orders, setOrders] = useState([]);
+const { TabPane } = Tabs;
+
+const OrderPage = () => {
+  // ---------------- STATE ----------------
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [approvedOrders, setApprovedOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [randomCar, setRandomCar] = useState(null);
   const [confirming, setConfirming] = useState(false);
 
-  const fetchOrders = async () => {
+  // ---------------- FETCH ----------------
+  const fetchPendingOrders = async () => {
     setLoading(true);
     try {
       const data = await getOrderPending();
-      setOrders(data.data.orderDetailDtos || []);
-    } catch (err) {
-      message.error("Không thể tải danh sách đơn hàng!");
+      setPendingOrders(data.data.orderDetailDtos || []);
+    } catch {
+      message.error("Không thể tải danh sách đơn chờ duyệt!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchApprovedOrders = async () => {
+    setLoading(true);
+    try {
+      const data = await getOrderByStatus("APPROVED");
+      setApprovedOrders(data.data.orderDetailDtos || []);
+    } catch {
+      message.error("Không thể tải danh sách đơn chờ giao hàng!");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchPendingOrders();
+    fetchApprovedOrders();
   }, []);
 
+  // ---------------- APPROVE MODAL ----------------
   const handleApproveClick = async (order) => {
     try {
       setSelectedOrder(order);
@@ -45,18 +69,16 @@ const OrderPendingPage = () => {
     if (!selectedOrder || !randomCar) return;
     setConfirming(true);
     try {
-      // ✅ Correct body request
-      const body = {
-        orderId: selectedOrder.id,
-        carDetailId: randomCar.id || randomCar.carDetailId,
-        orderStatus: "APPROVED",
-      };
+      await approveOrder(
+        selectedOrder.id,
+        randomCar.carDetailId || randomCar.id
+      );
 
-      await approveOrder(body.orderId, body.carDetailId);
-
-      message.success("Đã duyệt đơn hàng thành công!");
+      message.success("Đã duyệt đơn thành công!");
       setModalOpen(false);
-      fetchOrders();
+
+      fetchPendingOrders();
+      fetchApprovedOrders(); // cập nhật tab 2
     } catch {
       message.error("Duyệt đơn thất bại!");
     } finally {
@@ -64,45 +86,47 @@ const OrderPendingPage = () => {
     }
   };
 
-  const columns = [
-    {
-      title: "Mã đơn",
-      dataIndex: "id",
-      key: "id",
-      width: 80,
-    },
+  // ---------------- START DELIVERY ----------------
+  const handleStartDelivery = async (order) => {
+    try {
+      await deliveryOrder(order.id, order.carDetail.carId);
+      message.success("Bắt đầu giao hàng!");
+
+      fetchApprovedOrders();
+    } catch {
+      message.error("Không thể cập nhật trạng thái giao hàng!");
+    }
+  };
+
+  // ---------------- TABLE COLUMNS ----------------
+  const pendingColumns = [
+    { title: "Mã đơn", dataIndex: "id", width: 80 },
     {
       title: "Mẫu xe",
       dataIndex: ["carModelGetDetailDto", "carModelName"],
-      key: "carModelName",
     },
     {
       title: "Khách hàng",
       dataIndex: ["customer", "fullName"],
-      key: "customerName",
     },
     {
       title: "Nhân viên đại lý",
       dataIndex: ["staff", "fullName"],
-      key: "staffName",
     },
     {
-      title: "Số tiền (VND)",
+      title: "Số tiền",
       dataIndex: "totalAmount",
-      key: "totalAmount",
-      render: (val) => val.toLocaleString("vi-VN"),
+      render: (v) => v.toLocaleString("vi-VN"),
     },
     {
       title: "Thanh toán",
       dataIndex: "paymentStatus",
-      key: "paymentStatus",
       render: (val) => (
         <Tag color={val === "DEPOSIT_PAID" ? "blue" : "orange"}>{val}</Tag>
       ),
     },
     {
       title: "Hành động",
-      key: "actions",
       render: (_, record) => (
         <Button type="primary" onClick={() => handleApproveClick(record)}>
           Duyệt đơn
@@ -111,19 +135,67 @@ const OrderPendingPage = () => {
     },
   ];
 
+  const approvedColumns = [
+    { title: "Mã đơn", dataIndex: "id", width: 80 },
+    {
+      title: "Mẫu xe",
+      dataIndex: ["carModelGetDetailDto", "carModelName"],
+    },
+    {
+      title: "Tên xe",
+      dataIndex: ["carDetail", "carName"],
+    },
+    {
+      title: "Khách hàng",
+      dataIndex: ["customer", "fullName"],
+    },
+    {
+      title: "Số tiền",
+      dataIndex: "totalAmount",
+      render: (v) => v.toLocaleString("vi-VN"),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      render: () => <Tag color="green">APPROVED</Tag>,
+    },
+    {
+      title: "Giao hàng",
+      render: (_, record) => (
+        <Button type="primary" onClick={() => handleStartDelivery(record)}>
+          Bắt đầu giao hàng
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <>
-      <h2 className="text-xl font-semibold mb-4">
-        Danh sách đơn hàng chờ duyệt
-      </h2>
-      <Table
-        dataSource={orders}
-        columns={columns}
-        rowKey="id"
-        loading={loading}
-        bordered
-      />
+      <Tabs defaultActiveKey="1">
+        {/* ---------------- Tab 1 ---------------- */}
+        <TabPane tab="Đơn hàng chờ duyệt" key="1">
+          <Table
+            dataSource={pendingOrders}
+            columns={pendingColumns}
+            rowKey="id"
+            loading={loading}
+            bordered
+          />
+        </TabPane>
 
+        {/* ---------------- Tab 2 ---------------- */}
+        <TabPane tab="Danh sách đơn hàng chờ giao hàng" key="2">
+          <Table
+            dataSource={approvedOrders}
+            columns={approvedColumns}
+            rowKey="id"
+            loading={loading}
+            bordered
+          />
+        </TabPane>
+      </Tabs>
+
+      {/* ----------- APPROVE MODAL ----------- */}
       <Modal
         open={modalOpen}
         title="Xác nhận duyệt đơn hàng"
@@ -141,11 +213,11 @@ const OrderPendingPage = () => {
             <Descriptions.Item label="Mẫu xe">
               {selectedOrder.carModelGetDetailDto.carModelName}
             </Descriptions.Item>
-            <Descriptions.Item label="Mã xe được gán">
-              {randomCar.carDetailId || randomCar.id || "(Không rõ mã xe)"}
+            <Descriptions.Item label="Mã xe">
+              {randomCar.carDetailId || randomCar.id}
             </Descriptions.Item>
-            <Descriptions.Item label="Tên xe được gán">
-              {randomCar.carName || randomCar.vin || "(Không rõ tên xe)"}
+            <Descriptions.Item label="Tên xe">
+              {randomCar.carName}
             </Descriptions.Item>
             <Descriptions.Item label="Khách hàng">
               {selectedOrder.customer.fullName}
@@ -160,4 +232,4 @@ const OrderPendingPage = () => {
   );
 };
 
-export default OrderPendingPage;
+export default OrderPage;
