@@ -1,5 +1,6 @@
+// src/components/Navbar.jsx (Hoặc file Navmain của bạn)
 import { Layout, Menu, Dropdown, Avatar, Button } from "antd";
-import React from "react"; // Bỏ useEffect, useState
+import React from "react"; 
 import { Link, useNavigate } from "react-router-dom";
 import {
   CarOutlined,
@@ -16,7 +17,6 @@ const { Header } = Layout;
 export default function Navbar() {
   const navigate = useNavigate();
 
-  // 2. LẤY USER VÀ QUYỀN TỪ CONTEXT
   const { user, logout } = useAuth();
   const isManager = user && user.role === "DEALER_MANAGER";
   const username = user?.username || user?.fullName || "User";
@@ -47,15 +47,81 @@ export default function Navbar() {
       key: "test-drive",
       label: <Link to="/customers/test-drive">Lịch hẹn lái thử</Link>,
     },
-    // Chỉ Manager mới thấy nút này
     isManager && {
       key: "create-test-drive",
-
       label: (
         <Link to="/customers/test-drive/create">Quản lý Slot Lái Thử</Link>
       ),
     },
-  ].filter(Boolean); // Lọc bỏ giá trị 'false' (nếu là staff)
+  ].filter(Boolean); 
+
+  // (Di chuyển 'items' ra ngoài)
+  const mainMenuItems = [
+    {
+      key: "vehicles",
+      icon: <CarOutlined />,
+      label: "Xe",
+      children: [
+        { key: "view", label: <Link to="/vehicles">Danh mục xe</Link> },
+        {
+          key: "compare",
+          label: <Link to="/vehicles/compare">So sánh</Link>,
+        },
+      ],
+    },
+    {
+      key: "sales",
+      icon: <ShoppingCartOutlined />,
+      label: "Bán hàng",
+      children: [
+        {
+          key: "quote",
+          label: <Link to="/sales/quotes">Tạo báo giá</Link>,
+        },
+        {
+          key: "orders",
+          label: <Link to="/sales/orders">Đơn hàng</Link>,
+        },
+        {
+          key: "delivery",
+          label: <Link to="/sales/delivery">Giao xe</Link>,
+        },
+        {
+          key: "payments",
+          label: <Link to="/sales/payments">Thanh toán</Link>,
+        },
+        {
+          key: "price-list",
+          label: <Link to="/sales/price-list">Bảng giá</Link>,
+        },
+      ],
+    },
+    {
+      key: "customers",
+      icon: <UserOutlined />,
+      label: "Khách hàng",
+      children: customerMenuItems,
+    },
+    
+    // ❗️ SỬA LỖI: Hiển thị "Báo cáo" cho cả 2 vai trò
+    {
+      key: "reports",
+      icon: <BarChartOutlined />,
+      label: "Báo cáo",
+      children: [
+        // Chỉ Manager thấy "Doanh số"
+        isManager && {
+          key: "sales-report",
+          label: <Link to="/reports/sales">Doanh số</Link>,
+        },
+        // Cả Staff và Manager đều thấy "Công nợ"
+        {
+          key: "debt-report",
+          label: <Link to="/reports/debt">Công nợ</Link>,
+        },
+      ].filter(Boolean), // Lọc bỏ 'false' (Doanh số) nếu là Staff
+    },
+  ].filter(Boolean); // Lọc chính (không cần thiết nữa, nhưng giữ lại)
 
   return (
     <Header className="flex items-center bg-emerald-700 px-6">
@@ -69,70 +135,7 @@ export default function Navbar() {
         mode="horizontal"
         className="flex-1 bg-emerald-700"
         defaultSelectedKeys={["home"]}
-        items={[
-          {
-            key: "vehicles",
-            icon: <CarOutlined />,
-            label: "Xe",
-            children: [
-              { key: "view", label: <Link to="/vehicles">Danh mục xe</Link> },
-              {
-                key: "compare",
-                label: <Link to="/vehicles/compare">So sánh</Link>,
-              },
-            ],
-          },
-          {
-            key: "sales",
-            icon: <ShoppingCartOutlined />,
-            label: "Bán hàng",
-            children: [
-              {
-                key: "quote",
-                label: <Link to="/sales/quotes">Tạo báo giá</Link>,
-              },
-              {
-                key: "orders",
-                label: <Link to="/sales/orders">Đơn hàng</Link>,
-              },
-              {
-                key: "delivery",
-                label: <Link to="/sales/delivery">Giao xe</Link>,
-              },
-              {
-                key: "payments",
-                label: <Link to="/sales/payments">Thanh toán</Link>,
-              },
-              {
-                key: "price-list",
-                label: <Link to="/sales/price-list">Bảng giá</Link>,
-              },
-            ],
-          },
-
-          {
-            key: "customers",
-            icon: <UserOutlined />,
-            label: "Khách hàng",
-            children: customerMenuItems,
-          },
-
-          {
-            key: "reports",
-            icon: <BarChartOutlined />,
-            label: "Báo cáo",
-            children: [
-              {
-                key: "sales-report",
-                label: <Link to="/reports/sales">Doanh số</Link>,
-              },
-              {
-                key: "debt-report",
-                label: <Link to="/reports/debt">Công nợ</Link>,
-              },
-            ],
-          },
-        ]}
+        items={mainMenuItems} 
       />
 
       {/* User avatar */}

@@ -1,8 +1,11 @@
+// src/api/cars.js
+// const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
 import { API_BASE } from "../config/api";
 
 export const getCarDetails = async (carId) => {
   const token = localStorage.getItem("access_token");
 
+  // Sửa endpoint (để hết lỗi CORS)
   const response = await fetch(`${API_BASE}/carDetail/${carId}/detail`, {
     method: "GET",
     headers: {
@@ -20,6 +23,7 @@ export const getAllCars = async (params) => {
   const { pageNo = 0, pageSize = 10 } = params || {};
   const token = localStorage.getItem("access_token");
 
+  // Sửa endpoint (để hết lỗi CORS)
   const response = await fetch(
     `${API_BASE}/carDetail/all?pageNo=${pageNo}&pageSize=${pageSize}`,
     {
@@ -37,6 +41,29 @@ export const getAllCars = async (params) => {
   return await response.json();
 };
 
+// HÀM MỚI (để sửa lỗi SyntaxError)
+export const getCarModelsForSale = async () => {
+  const token = localStorage.getItem("access_token");
+
+  const response = await fetch(
+    `${API_BASE}/carDetail-model/all`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch car models for sale");
+  }
+  return await response.json();
+};
+
+
+// (Các hàm còn lại giữ nguyên)
 export const createCar = async (carData) => {
   const token = localStorage.getItem("access_token");
   const response = await fetch(`${API_BASE}/carDetail/create`, {
@@ -72,15 +99,12 @@ export const updateCar = async (carId, carData) => {
 export const postImageForCar = async (carId, files) => {
   const token = localStorage.getItem("access_token");
   const formData = new FormData();
-
-  // files: array of File objects
   files.forEach((f) => formData.append("files", f));
 
   const response = await fetch(`${API_BASE}/carDetail/${carId}/upload/images`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
-      // không set Content-Type, browser tự set
     },
     body: formData,
   });
