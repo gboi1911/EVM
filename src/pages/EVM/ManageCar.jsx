@@ -155,36 +155,33 @@ export default function ManageCar() {
       const values = await form.validateFields();
       if (modalType === "create") {
         const createData = {
-          categoryId: Number(values.categoryId),
-          colorPostDto: {
-            colorName: values.colorName || "",
-            colorHex: values.colorHex || "",
-            extraCost: Number(values.extraCost || 0),
-          },
+          carModelId: Number(values.carModelId),
           carName: values.carName,
-          price: Number(values.price || 0),
-          driveType: values.driveType,
-          year: Number(values.year || 0),
+          carStatus: values.carStatus,
+          color: values.color,
+
           dimensionPostDto: {
-            seatNumber: Number(values.seatNumber || 0),
-            weightLbs: Number(values.weightLbs || 0),
-            groundClearanceIn: Number(values.groundClearanceIn || 0),
-            widthFoldedIn: Number(values.widthFoldedIn || 0),
-            widthExtendedIn: Number(values.widthExtendedIn || 0),
-            lengthMm: Number(values.lengthMm || 0),
-            heightIn: Number(values.heightIn || 0),
-            lengthIn: Number(values.lengthIn || 0),
-            wheelsSizeCm: Number(values.wheelsSizeCm || 0),
+            seatNumber: Number(values.seatNumber),
+            weightLbs: Number(values.weightLbs),
+            groundClearanceIn: Number(values.groundClearanceIn),
+            widthFoldedIn: Number(values.widthFoldedIn),
+            widthExtendedIn: Number(values.widthExtendedIn),
+            lengthMm: Number(values.lengthMm),
+            heightIn: Number(values.heightIn),
+            lengthIn: Number(values.lengthIn),
+            wheelsSizeCm: Number(values.wheelsSizeCm),
           },
+
           performancePostDto: {
-            batteryId: Number(values.batteryId || 0),
-            motorId: Number(values.motorId || 0),
-            rangeMiles: Number(values.rangeMiles || 0),
-            accelerationSec: Number(values.accelerationSec || 0),
-            topSpeedMph: Number(values.topSpeedMph || 0),
-            towingLbs: Number(values.towingLbs || 0),
+            batteryType: values.batteryType,
+            motorType: values.motorType,
+            rangeMiles: Number(values.rangeMiles),
+            accelerationSec: Number(values.accelerationSec),
+            topSpeedMph: Number(values.topSpeedMph),
+            towingLbs: Number(values.towingLbs),
           },
         };
+
         await createCar(createData);
         notification.success({
           message: "Tạo mới thành công!",
@@ -355,42 +352,38 @@ export default function ManageCar() {
     <Form form={form} layout="vertical">
       <Tabs defaultActiveKey="1">
         <TabPane tab="Thông tin cơ bản" key="1">
+          <Form.Item
+            name="carModelId"
+            label="Car Model ID"
+            rules={[{ required: true }]}
+          >
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+
           <Form.Item name="carName" label="Tên xe" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
+
           <Form.Item
-            name="categoryId"
-            label="Danh mục (ID)"
+            name="carStatus"
+            label="Trạng thái xe"
             rules={[{ required: true }]}
           >
-            <InputNumber min={0} style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item name="price" label="Giá" rules={[{ required: true }]}>
-            <InputNumber
-              formatter={(value) =>
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              }
-              parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-              style={{ width: "100%" }}
+            <Select
+              options={[
+                { label: "FOR_SALE", value: "FOR_SALE" },
+                { label: "SOLD", value: "SOLD" },
+                { label: "MAINTENANCE", value: "MAINTENANCE" },
+              ]}
             />
           </Form.Item>
-          <Form.Item
-            name="driveType"
-            label="Loại dẫn động"
-            rules={[{ required: true }]}
-          >
-            <Select options={driveTypeOptions} />
-          </Form.Item>
-          <Form.Item
-            name="year"
-            label="Năm sản xuất"
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={1900} max={2100} style={{ width: "100%" }} />
+
+          <Form.Item name="color" label="Màu xe" rules={[{ required: true }]}>
+            <Input />
           </Form.Item>
         </TabPane>
 
-        <TabPane tab="Màu sắc" key="2">
+        {/* <TabPane tab="Màu sắc" key="2">
           <Form.Item
             name="colorName"
             label="Tên màu"
@@ -408,60 +401,87 @@ export default function ManageCar() {
           <Form.Item name="extraCost" label="Phụ phí">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-
-          {/* Upload removed from create form per request.
-              Images are added later via the "Ảnh" action in the list. */}
-        </TabPane>
+        </TabPane> */}
 
         <TabPane tab="Kích thước" key="3">
           <Form.Item name="seatNumber" label="Số ghế">
-            <InputNumber min={0} style={{ width: "100%" }} />
+            <InputNumber min={1} style={{ width: "100%" }} />
           </Form.Item>
+
           <Form.Item name="weightLbs" label="Trọng lượng (lbs)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
+
           <Form.Item name="groundClearanceIn" label="Khoảng sáng gầm (in)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="widthFoldedIn" label="Chiều rộng khi gập gương (in)">
+
+          <Form.Item name="widthFoldedIn" label="Chiều rộng khi gập (in)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-            name="widthExtendedIn"
-            label="Chiều rộng khi mở gương (in)"
-          >
+
+          <Form.Item name="widthExtendedIn" label="Chiều rộng khi mở (in)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="lengthMm" label="Chiều dài xe (mm)">
+
+          <Form.Item name="lengthMm" label="Chiều dài (mm)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="heightIn" label="Chiều cao xe (in)">
+
+          <Form.Item name="heightIn" label="Chiều cao (in)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="lengthIn" label="Chiều dài xe (in)">
+
+          <Form.Item name="lengthIn" label="Chiều dài (in)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="wheelsSizeCm" label="Kích thước mâm/lốp (cm)">
+
+          <Form.Item name="wheelsSizeCm" label="Kích thước mâm (cm)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
         </TabPane>
 
         <TabPane tab="Hiệu suất" key="4">
-          <Form.Item name="batteryId" label="ID Pin">
-            <InputNumber min={0} style={{ width: "100%" }} />
+          <Form.Item
+            name="batteryType"
+            label="Loại Pin"
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={[
+                { label: "STANDARD", value: "STANDARD" },
+                { label: "LITHIUM", value: "LITHIUM" },
+                { label: "PREMIUM", value: "PREMIUM" },
+              ]}
+            />
           </Form.Item>
-          <Form.Item name="motorId" label="ID Động cơ">
-            <InputNumber min={0} style={{ width: "100%" }} />
+
+          <Form.Item
+            name="motorType"
+            label="Loại động cơ"
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={[
+                { label: "DC_BRUSHED", value: "DC_BRUSHED" },
+                { label: "DC_BRUSHLESS", value: "DC_BRUSHLESS" },
+                { label: "AC", value: "AC" },
+              ]}
+            />
           </Form.Item>
+
           <Form.Item name="rangeMiles" label="Phạm vi (miles)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
+
           <Form.Item name="accelerationSec" label="Tăng tốc (sec)">
-            <InputNumber min={0} step={0.01} style={{ width: "100%" }} />
+            <InputNumber min={0} step={0.1} style={{ width: "100%" }} />
           </Form.Item>
+
           <Form.Item name="topSpeedMph" label="Tốc độ tối đa (mph)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
+
           <Form.Item name="towingLbs" label="Sức kéo (lbs)">
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
@@ -476,14 +496,15 @@ export default function ManageCar() {
     return (
       <>
         <Descriptions bordered column={1} size="small">
-          <Descriptions.Item label="ID">{car.id}</Descriptions.Item>
+          <Descriptions.Item label="ID">{car.carDetailId}</Descriptions.Item>
           <Descriptions.Item label="Tên xe">{car.carName}</Descriptions.Item>
-          <Descriptions.Item label="Loại dẫn động">
+          {/* <Descriptions.Item label="Loại dẫn động">
             {car.driveType}
-          </Descriptions.Item>
-          <Descriptions.Item label="Năm">{car.year}</Descriptions.Item>
-          <Descriptions.Item label="Danh mục">
-            {car.category?.categoryName} (ID: {car.category?.id})
+          </Descriptions.Item> */}
+          {/* <Descriptions.Item label="Năm">{car.year}</Descriptions.Item> */}
+          <Descriptions.Item label="Dòng xe">
+            {/* {car.category?.categoryName} (ID: {car.category?.id}) */}
+            {car.carModelName}
           </Descriptions.Item>
 
           <Descriptions.Item label="Kích thước">
@@ -509,7 +530,7 @@ export default function ManageCar() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Màu sắc">
-            {car.color ? (
+            {/* {car.color ? (
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
                   style={{
@@ -528,7 +549,8 @@ export default function ManageCar() {
               </div>
             ) : (
               "-"
-            )}
+            )} */}
+            {car.color || "-"}
           </Descriptions.Item>
 
           <Descriptions.Item label="Hiệu suất">

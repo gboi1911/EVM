@@ -35,11 +35,11 @@ const items = [
         icon: <CarOutlined />,
         label: "Quản lý xe điện",
       },
-      {
-        key: "motorbike",
-        icon: <DashboardOutlined />,
-        label: "Quản lý động cơ",
-      },
+      // {
+      //   key: "motorbike",
+      //   icon: <DashboardOutlined />,
+      //   label: "Quản lý động cơ",
+      // },
       {
         key: "inventory",
         icon: <ClusterOutlined />,
@@ -66,6 +66,11 @@ const items = [
         key: "account",
         icon: <UsergroupAddOutlined />,
         label: "Quản lý tài khoản đại lý & nhân viên",
+      },
+      {
+        key: "order",
+        icon: <ShopOutlined />,
+        label: "Quản lý đơn hàng đại lý",
       },
     ],
   },
@@ -156,6 +161,9 @@ export default function NavbarEVM() {
     }
     if (e.key === "sales") {
       navigate("/homeEVM/manage-sales-report");
+    }
+    if (e.key === "order") {
+      navigate("/homeEVM/manage-order");
     }
   };
 

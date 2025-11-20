@@ -12,6 +12,7 @@ import {
 import { filterAccountsByRole } from "../../api/authen";
 import { getInventory, getSalesSpeed } from "../../api/inventory";
 import { getCarDetails } from "../../api/car";
+import { getWarehouseList } from "../../api/warehouse";
 import moment from "moment";
 
 const { Title } = Typography;
@@ -69,46 +70,29 @@ export default function ManageInventoryAndSales() {
   };
 
   const fetchInventory = async (dealerId, page = 1, pageSize = 10) => {
-    if (!dealerId) return;
-
     setInventoryLoading(true);
     try {
-      const response = await getInventory(dealerId, page - 1, pageSize);
+      const response = await getWarehouseList(page - 1, pageSize);
+
       const items = response.inventoryInfoGetDtos || [];
 
-      // enrich items with carName using cache and getCarDetails API
-      const enriched = await Promise.all(
-        items.map(async (item) => {
-          const carId = item.carId;
-          if (!carId) return { ...item, carName: "N/A" };
+      // Transform API data to match table columns
+      const mapped = items.map((item, index) => {
+        const car = item.carDetail || {};
+        return {
+          id: item.id,
+          carId: car.carDetailId || "-",
+          carName: car.carName || car.carModelName || "N/A",
+          quantity: item.quantity ?? 0,
+          warehouseCarStatus: item.warehouseCarStatus || "UNKNOWN",
+        };
+      });
 
-          if (carNameCacheRef.current[carId]) {
-            return { ...item, carName: carNameCacheRef.current[carId] };
-          }
-
-          try {
-            const car = await getCarDetails(carId);
-            // handle possible property names returned by API
-            const name =
-              car?.name ||
-              car?.carName ||
-              car?.model ||
-              car?.vehicleName ||
-              "N/A";
-            carNameCacheRef.current[carId] = name;
-            return { ...item, carName: name };
-          } catch (err) {
-            // fallback if API call fails
-            return { ...item, carName: "N/A" };
-          }
-        })
-      );
-
-      setInventoryData(enriched);
+      setInventoryData(mapped);
       setInventoryPagination({
         current: (response.pageNo || 0) + 1,
         pageSize: response.pageSize || pageSize,
-        total: response.totalElements || 0,
+        total: response.totalElements || mapped.length,
       });
     } catch (error) {
       notification.error({
@@ -156,23 +140,23 @@ export default function ManageInventoryAndSales() {
     { title: "Mã xe", dataIndex: "carId", key: "carId" },
     { title: "Tên xe", dataIndex: "carName", key: "carName" }, // new column
     { title: "Tổng số lượng", dataIndex: "quantity", key: "quantity" },
-    {
-      title: "Đã đặt trước",
-      dataIndex: "reservedQuantity",
-      key: "reservedQuantity",
-    },
-    {
-      title: "Còn trống",
-      dataIndex: "availableQuantity",
-      key: "availableQuantity",
-    },
+    // {
+    //   title: "Đã đặt trước",
+    //   dataIndex: "reservedQuantity",
+    //   key: "reservedQuantity",
+    // },
+    // {
+    //   title: "Còn trống",
+    //   dataIndex: "availableQuantity",
+    //   key: "availableQuantity",
+    // },
     {
       title: "Trạng thái",
-      dataIndex: "status",
+      dataIndex: "warehouseCarStatus",
       key: "status",
       render: (status) => (status === "IN_STOCK" ? "Còn hàng" : "Hết hàng"),
     },
-    { title: "Ghi chú", dataIndex: "note", key: "note" },
+    // { title: "Ghi chú", dataIndex: "note", key: "note" },
   ];
 
   const salesColumns = [
@@ -189,7 +173,7 @@ export default function ManageInventoryAndSales() {
     <div className="p-6 space-y-6">
       <Card title={<Title level={4}>Quản lý kho</Title>}>
         <Space className="mb-4">
-          <Select
+          {/* <Select
             placeholder="Chọn đại lý"
             options={dealers}
             value={selectedDealer}
@@ -197,7 +181,7 @@ export default function ManageInventoryAndSales() {
             style={{ width: 300 }}
             showSearch
             optionFilterProp="label"
-          />
+          /> */}
         </Space>
         <Table
           columns={inventoryColumns}

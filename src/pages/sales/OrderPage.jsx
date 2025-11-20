@@ -24,6 +24,7 @@ import {
   updateOrder,
   getOrderActivities,
 } from "../../api/order.js";
+import { deliveriedOrder, finisheddOrder } from "../../api/car.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const { TabPane } = Tabs;
@@ -134,7 +135,7 @@ export default function OrderPage() {
     setActivities([]);
 
     try {
-      const [detailResponse, activityResponse] = await Promise.all([
+      const [detailRes, activityRes] = await Promise.all([
         getOrderById(record.id),
         getOrderActivities(record.id),
       ]);
@@ -397,6 +398,9 @@ export default function OrderPage() {
                     >
                       Báo giá
                     </Button>
+                  )}
+
+                  {selected.status === "DELIVERED" && (
                     <Button
                       icon={<FilePdfOutlined />}
                       href={selectedOrder.contractUrl}
@@ -405,9 +409,9 @@ export default function OrderPage() {
                     >
                       Hợp đồng
                     </Button>
-                  </Space>
-                </Col>
-              </Row>
+                  )}
+                </div>
+              </>
             )
           )}
         </Modal>

@@ -123,7 +123,7 @@ export const updateProfile = async (userIdOrProfileData, profileData) => {
 export const changePassword = async (oldPassword, newPassword) => {
   const token = localStorage.getItem("access_token");
   const response = await fetch(`${API_BASE}/user/change-password`, {
-    method: "POST",
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
