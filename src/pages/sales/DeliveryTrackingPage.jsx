@@ -1,5 +1,5 @@
 // src/pages/sales/DeliveryTrackingPage.jsx
-import React, { useState, useEffect, useMemo } from "react"; // ❗️ Thêm useMemo
+import React, { useState, useEffect, useMemo } from "react"; 
 import { 
   Spin, message, Tag, Card, Steps, Button, Modal, Form, InputNumber, Select 
 } from "antd";
@@ -13,7 +13,6 @@ import { useAuth } from "../../context/AuthContext";
 
 const { Step } = Steps;
 
-// (Các hằng số Map giữ nguyên)
 const deliverySteps = [
   { title: "Đã tạo đơn", description: "Đơn hàng được tạo", icon: <FileTextOutlined />, status: "PENDING" },
   { title: "Đã duyệt", description: "Đã phê duyệt", icon: <CheckCircleOutlined />, status: "APPROVED" },
@@ -35,8 +34,9 @@ const orderStatusMap = {
   DELIVERED: { text: "Đã giao", color: "#10b981" },
   COMPLETED: { text: "Hoàn tất", color: "#059669" }
 };
+
 const nextStepMap = {
-  PENDING: { next: "APPROVED", text: "Duyệt đơn", icon: <CheckCircleOutlined /> },
+  PENDING: null, 
   APPROVED: { next: "IN_DELIVERY", text: "Bắt đầu Giao hàng", icon: <TruckOutlined /> },
   IN_DELIVERY: { next: "DELIVERED", text: "Xác nhận Đã giao", icon: <HomeOutlined /> },
   DELIVERED: { next: "COMPLETED", text: "Hoàn tất đơn", icon: <SmileOutlined /> },
@@ -55,26 +55,23 @@ export default function DeliveryTrackingPage() {
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
   
   const { user, loading: authLoading } = useAuth();
-  // ❗️ Sửa: Gói 'isManager' trong useMemo
   const isManager = useMemo(() => user && user.role === "DEALER_MANAGER", [user]);
 
-  // Lấy tất cả đơn hàng
   const fetchAllOrders = async () => {
-    if (!user) return; // Chờ user
+    if (!user) return; 
     try {
       setLoading(true);
       const statuses = ["PENDING", "APPROVED", "IN_DELIVERY", "DELIVERED", "COMPLETED"];
       
-      // ❗️ SỬA LỖI 403 (Theo yêu cầu BE)
       const baseParams = {};
       if (!isManager) {
-        baseParams.staffId = user.id; // Gán staffId
+        baseParams.staffId = user.id; 
       }
       
       const responses = await Promise.all(
         statuses.map(status => {
            const params = { ...baseParams, status };
-           return getListOrders(params); // Gửi params
+           return getListOrders(params); 
         })
       );
 
@@ -98,10 +95,10 @@ export default function DeliveryTrackingPage() {
   };
 
   useEffect(() => {
-    if (!authLoading && user) { // ❗️ Thêm 'user'
+    if (!authLoading && user) { 
       fetchAllOrders();
     }
-  }, [authLoading, user]); // ❗️ Thêm 'user'
+  }, [authLoading, user]); 
 
   const getCurrentStep = (status) => {
     const stepIndex = deliverySteps.findIndex(step => step.status === status);
@@ -140,7 +137,6 @@ export default function DeliveryTrackingPage() {
 
   // Component Item List
   const OrderListItem = ({ order, isSelected, onClick }) => {
-    // (Sửa lỗi N/A từ tin nhắn trước)
     const img = order.carDetail?.carImages?.[0]?.fileUrl;
     const statusInfo = orderStatusMap[order.status] || { text: order.status, color: "#6b7280" };
     const carName = order.carDetail?.carName || order.carModelGetDetailDto?.carModelName || "N/A";
@@ -192,7 +188,6 @@ export default function DeliveryTrackingPage() {
       );
     }
 
-    // (Sửa lỗi N/A từ tin nhắn trước)
     const img = order.carDetail?.carImages?.[0]?.fileUrl;
     const payInfo = paymentStatusMap[order.paymentStatus] || { text: order.paymentStatus, color: "#6b7280" };
     const paymentPercent = (order.totalAmount > 0) ? ((order.amountPaid / order.totalAmount) * 100).toFixed(0) : 0;
@@ -247,15 +242,16 @@ export default function DeliveryTrackingPage() {
           title={
             <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span><DollarOutlined /> Thông tin thanh toán</span>
-              {isManager && (
-                <Button
-                  type="primary" icon={<PlusOutlined />} size="small"
-                  onClick={() => setPaymentModalOpen(true)}
-                  disabled={isFullyPaid || order.status === 'COMPLETED'}
-                >
-                  Ghi nhận
-                </Button>
-              )}
+              
+              {/* Bỏ 'isManager' để Staff cũng thấy nút Ghi nhận */}
+              <Button
+                type="primary" icon={<PlusOutlined />} size="small"
+                onClick={() => setPaymentModalOpen(true)}
+                disabled={isFullyPaid || order.status === 'COMPLETED'}
+              >
+                Ghi nhận
+              </Button>
+
             </span>
           }
           size="small" style={{ marginBottom: 16 }}
@@ -275,8 +271,8 @@ export default function DeliveryTrackingPage() {
               />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
-              <span>${(order.amountPaid || 0).toLocaleString()}</span>
-              <span style={{ color: "#9ca3af" }}>/ ${(order.totalAmount || 0).toLocaleString()}</span>
+              <span>{(order.amountPaid || 0).toLocaleString()} ₫</span>
+              <span style={{ color: "#9ca3af" }}>/ {(order.totalAmount || 0).toLocaleString()} ₫</span>
             </div>
           </div>
           <Tag style={{ fontSize: 12, border: "none", borderRadius: 4, padding: "4px 8px" }} color={progressColor}>
@@ -284,8 +280,8 @@ export default function DeliveryTrackingPage() {
           </Tag>
         </Card>
 
-        {/* Actions (Chỉ Manager thấy) */}
-        {isManager && nextAction && (
+        {/* ❗️ SỬA LỖI: Bỏ điều kiện 'isManager' để Staff cũng thấy nút Hành động */}
+        {nextAction && (
           <Card title="Hành động" size="small">
             <p>Đơn hàng đang ở trạng thái: <b>{statusInfo.text}</b>.</p>
             <Button
@@ -313,7 +309,6 @@ export default function DeliveryTrackingPage() {
   return (
     <div style={{ backgroundColor: "#f3f4f6", minHeight: "100vh", padding: "24px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        {/* Header */}
         <div style={{
           background: "white", borderRadius: 12, padding: "20px 24px",
           marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
@@ -392,8 +387,8 @@ export default function DeliveryTrackingPage() {
             <InputNumber
               min={1}
               style={{ width: "100%" }}
-              formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' ₫'}
+              parser={(value) => value.replace(/\s?₫|(,*)/g, '')}
               placeholder="Nhập số tiền"
             />
           </Form.Item>
