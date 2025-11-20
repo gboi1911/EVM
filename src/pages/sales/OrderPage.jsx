@@ -12,13 +12,10 @@ import {
   Col,
   Tabs,
   Popconfirm,
-  Form,
-  Input, // Thêm Form, Input
 } from "antd";
 import { useEffect, useState, useMemo } from "react";
 import {
   FilePdfOutlined,
-  CheckCircleOutlined,
   TruckOutlined,
 } from "@ant-design/icons";
 import {
@@ -30,6 +27,7 @@ import {
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const { TabPane } = Tabs;
+
 const statusLabels = {
   PENDING: "Chờ duyệt",
   APPROVED: "Đã duyệt",
@@ -80,13 +78,7 @@ export default function OrderPage() {
   const [activities, setActivities] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Modal Duyệt đơn (Nhập số khung/số máy) - YÊU CẦU HÃNG XE
-  const [openApproveModal, setOpenApproveModal] = useState(false);
-  const [approveForm] = Form.useForm();
-  const [approveLoading, setApproveLoading] = useState(false);
-  const [orderToApprove, setOrderToApprove] = useState(null);
-
-  // 1. Lấy danh sách (Có xử lý staffId để tránh lỗi 403)
+  // 1. Lấy danh sách đơn hàng
   const fetchAllOrders = async () => {
     if (!user) return;
 
@@ -102,7 +94,7 @@ export default function OrderPage() {
       ];
 
       const baseParams = {};
-      // STAFF chỉ xem đơn của mình
+      // STAFF chỉ xem đơn của mình, MANAGER xem hết của đại lý
       if (!isManager) {
         baseParams.staffId = user.id;
       }
@@ -157,36 +149,7 @@ export default function OrderPage() {
     }
   };
 
-  // --- XỬ LÝ DUYỆT ĐƠN (Mở Modal) ---
-  const handleOpenApprove = (record) => {
-    setOrderToApprove(record);
-    setOpenApproveModal(true);
-    approveForm.resetFields();
-  };
-
-  // --- XỬ LÝ SUBMIT DUYỆT ĐƠN (Gửi VIN + Engine) ---
-  const handleApproveSubmit = async (values) => {
-    try {
-      setApproveLoading(true);
-      // Gửi API cập nhật trạng thái + số khung/số máy
-      const payload = {
-        status: "APPROVED",
-        vinNumber: values.vinNumber, // Số khung
-        engineNumber: values.engineNumber, // Số máy
-      };
-
-      await updateOrder(orderToApprove.id, payload);
-      message.success(`Đơn hàng #${orderToApprove.id} đã được DUYỆT!`);
-      setOpenApproveModal(false);
-      fetchAllOrders();
-    } catch (err) {
-      message.error("Duyệt đơn thất bại: " + err.message);
-    } finally {
-      setApproveLoading(false);
-    }
-  };
-
-  // --- XỬ LÝ CÁC TRẠNG THÁI KHÁC ---
+  // --- XỬ LÝ CẬP NHẬT TRẠNG THÁI (Chỉ dùng cho Hủy/Từ chối/Giao hàng) ---
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       const payload = { status: newStatus };
@@ -234,21 +197,9 @@ export default function OrderPage() {
         {/* LOGIC CHO MANAGER */}
         {isManager && (
           <>
-            {/* Tab PENDING: Duyệt (nếu đã cọc), Từ chối, Hủy */}
+            {/* Tab PENDING: Chỉ được Từ chối hoặc Hủy (Không được Duyệt) */}
             {tabKey === "PENDING" && (
               <>
-                {/* ✅ YÊU CẦU 1: Chỉ hiện nút DUYỆT nếu payment != PENDING */}
-                {record.paymentStatus !== "PENDING" && (
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<CheckCircleOutlined />}
-                    onClick={() => handleOpenApprove(record)}
-                  >
-                    Duyệt
-                  </Button>
-                )}
-
                 <Popconfirm
                   title="Từ chối đơn hàng này?"
                   onConfirm={() => handleUpdateStatus(record.id, "REJECTED")}
@@ -273,7 +224,7 @@ export default function OrderPage() {
               </>
             )}
 
-            {/* ✅ YÊU CẦU 2: Tab APPROVED -> Chuyển sang IN_DELIVERY */}
+            {/* Tab APPROVED: Đã được hãng duyệt -> Đại lý bấm Giao hàng */}
             {tabKey === "APPROVED" && (
               <>
                 <Popconfirm
@@ -320,7 +271,7 @@ export default function OrderPage() {
 
     return [
       ...baseColumns,
-      { title: "Thao tác", render: actionRender, width: 250 },
+      { title: "Thao tác", render: actionRender, width: 200 },
     ];
   };
 
@@ -346,7 +297,8 @@ export default function OrderPage() {
         }}
       >
         <h2
-          style={{
+            style={{
+            fontSize: 25,
             fontWeight: 700,
             color: "#059669",
             textAlign: "center",
@@ -374,7 +326,7 @@ export default function OrderPage() {
           ))}
         </Tabs>
 
-        {/* MODAL 1: XEM CHI TIẾT */}
+        {/* MODAL: XEM CHI TIẾT */}
         <Modal
           open={openDetailModal}
           onCancel={() => setOpenDetailModal(false)}
@@ -411,7 +363,7 @@ export default function OrderPage() {
                     </Tag>
                   </p>
 
-                  {/* Hiển thị số khung/máy nếu đã có */}
+                  {/* Chỉ hiển thị số khung/máy (Do hãng nhập) */}
                   {selectedOrder.vinNumber && (
                     <p>
                       <b>Số khung:</b> {selectedOrder.vinNumber}
@@ -458,48 +410,6 @@ export default function OrderPage() {
               </Row>
             )
           )}
-        </Modal>
-
-        {/* ✅ YÊU CẦU 3: MODAL DUYỆT ĐƠN (Nhập VIN/Engine) */}
-        <Modal
-          title="Phê duyệt đơn hàng"
-          open={openApproveModal}
-          onCancel={() => setOpenApproveModal(false)}
-          footer={null}
-        >
-          <p>
-            Vui lòng cập nhật thông tin xe trước khi duyệt đơn hàng{" "}
-            <b>#{orderToApprove?.id}</b>.
-          </p>
-          <Form
-            form={approveForm}
-            layout="vertical"
-            onFinish={handleApproveSubmit}
-          >
-            <Form.Item
-              name="vinNumber"
-              label="Số Khung (VIN Number)"
-              rules={[{ required: true, message: "Vui lòng nhập số khung!" }]}
-            >
-              <Input placeholder="Nhập số khung xe..." />
-            </Form.Item>
-            <Form.Item
-              name="engineNumber"
-              label="Số Máy (Engine Number)"
-              rules={[{ required: true, message: "Vui lòng nhập số máy!" }]}
-            >
-              <Input placeholder="Nhập số máy xe..." />
-            </Form.Item>
-
-            <div
-              style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}
-            >
-              <Button onClick={() => setOpenApproveModal(false)}>Hủy</Button>
-              <Button type="primary" htmlType="submit" loading={approveLoading}>
-                Xác nhận Duyệt
-              </Button>
-            </div>
-          </Form>
         </Modal>
       </div>
     </div>
