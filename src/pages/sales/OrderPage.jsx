@@ -14,10 +14,7 @@ import {
   Popconfirm,
 } from "antd";
 import { useEffect, useState, useMemo } from "react";
-import {
-  FilePdfOutlined,
-  TruckOutlined,
-} from "@ant-design/icons";
+import { FilePdfOutlined } from "@ant-design/icons";
 import {
   getListOrders,
   getOrderById,
@@ -28,12 +25,13 @@ import { useAuth } from "../../context/AuthContext.jsx";
 
 const { TabPane } = Tabs;
 
+// Các nhãn tiếng Việt cho Trạng thái Đơn hàng
 const statusLabels = {
   PENDING: "Chờ duyệt",
   APPROVED: "Đã duyệt",
-  IN_DELIVERY: "Đang giao",
-  COMPLETED: "Hoàn thành",
-  REJECTED: "Bị từ chối",
+  IN_DELIVERY: "Đang vận chuyển",
+  COMPLETED: "Hoàn tất",
+  REJECTED: "Đã từ chối",
   CANCELLED: "Đã hủy",
 };
 
@@ -51,6 +49,14 @@ const paymentStatusColors = {
   DEPOSIT_PAID: "orange",
   PAID: "green",
   FINISHED: "green",
+};
+
+// Các nhãn tiếng Việt cho Trạng thái Thanh toán
+const paymentStatusLabels = {
+  PENDING: "Chưa thanh toán",
+  DEPOSIT_PAID: "Đã cọc",
+  PAID: "Đã thanh toán",
+  FINISHED: "Đã thanh toán",
 };
 
 export default function OrderPage() {
@@ -94,9 +100,9 @@ export default function OrderPage() {
       ];
 
       const baseParams = {};
-      // STAFF chỉ xem đơn của mình, MANAGER xem hết của đại lý
+      // STAFF chỉ xem đơn của mình (dùng userId), MANAGER xem hết
       if (!isManager) {
-        baseParams.staffId = user.id;
+        baseParams.staffId = user.userId;
       }
 
       const responses = await Promise.all(
@@ -106,10 +112,31 @@ export default function OrderPage() {
         })
       );
 
-      const newOrders = {};
-      responses.forEach((res, index) => {
-        const status = statuses[index];
-        newOrders[status] = res.data || res || [];
+      // Gộp và lọc lại phía Client để chắc chắn
+      const allOrders = responses.flatMap((res) => res.data || res || []);
+
+      const filteredOrders = isManager
+        ? allOrders
+        : allOrders.filter((order) => order.staff?.id == user.userId);
+
+      const newOrders = {
+        PENDING: [],
+        APPROVED: [],
+        IN_DELIVERY: [],
+        COMPLETED: [],
+        REJECTED: [],
+        CANCELLED: [],
+      };
+
+      filteredOrders.forEach((order) => {
+        if (newOrders[order.status]) {
+          newOrders[order.status].push(order);
+        }
+      });
+
+      // Sắp xếp mới nhất lên đầu
+      Object.keys(newOrders).forEach((key) => {
+        newOrders[key].sort((a, b) => b.id - a.id);
       });
 
       setOrders(newOrders);
@@ -149,7 +176,7 @@ export default function OrderPage() {
     }
   };
 
-  // --- XỬ LÝ CẬP NHẬT TRẠNG THÁI (Chỉ dùng cho Hủy/Từ chối/Giao hàng) ---
+  // --- XỬ LÝ CẬP NHẬT TRẠNG THÁI ---
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       const payload = { status: newStatus };
@@ -181,7 +208,20 @@ export default function OrderPage() {
     {
       title: "Thanh toán",
       dataIndex: "paymentStatus",
-      render: (s) => <Tag color={paymentStatusColors[s] || "default"}>{s}</Tag>,
+      // ❗️ SỬA LỖI: Hiển thị tiếng Việt cho trạng thái thanh toán
+      render: (s) => (
+        <Tag color={paymentStatusColors[s] || "default"}>
+          {paymentStatusLabels[s] || s}
+        </Tag>
+      ),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      // ❗️ SỬA LỖI: Hiển thị tiếng Việt cho trạng thái đơn hàng
+      render: (s) => (
+        <Tag color={statusColors[s] || "default"}>{statusLabels[s] || s}</Tag>
+      ),
     },
   ];
 
@@ -197,7 +237,7 @@ export default function OrderPage() {
         {/* LOGIC CHO MANAGER */}
         {isManager && (
           <>
-            {/* Tab PENDING: Chỉ được Từ chối hoặc Hủy (Không được Duyệt) */}
+            {/* Tab PENDING: Chỉ được Từ chối hoặc Hủy */}
             {tabKey === "PENDING" && (
               <>
                 <Popconfirm
@@ -224,35 +264,8 @@ export default function OrderPage() {
               </>
             )}
 
-            {/* Tab APPROVED: Đã được hãng duyệt -> Đại lý bấm Giao hàng */}
-            {tabKey === "APPROVED" && (
-              <>
-                <Popconfirm
-                  title="Bắt đầu giao xe?"
-                  onConfirm={() => handleUpdateStatus(record.id, "IN_DELIVERY")}
-                  okText="Giao hàng"
-                  cancelText="Hủy"
-                >
-                  <Button type="primary" size="small" icon={<TruckOutlined />}>
-                    Giao hàng
-                  </Button>
-                </Popconfirm>
-
-                <Popconfirm
-                  title="Hủy đơn hàng này?"
-                  onConfirm={() => handleUpdateStatus(record.id, "CANCELLED")}
-                  okText="Đúng"
-                  cancelText="Không"
-                >
-                  <Button type="link" danger>
-                    Hủy
-                  </Button>
-                </Popconfirm>
-              </>
-            )}
-
-            {/* Tab IN_DELIVERY: Hủy (nếu cần) */}
-            {tabKey === "IN_DELIVERY" && (
+            {/* Các Tab khác: Có thể Hủy nếu cần */}
+            {(tabKey === "APPROVED" || tabKey === "IN_DELIVERY") && (
               <Popconfirm
                 title="Hủy đơn hàng này?"
                 onConfirm={() => handleUpdateStatus(record.id, "CANCELLED")}
@@ -269,15 +282,19 @@ export default function OrderPage() {
       </Space>
     );
 
-    return [
-      ...baseColumns,
-      { title: "Thao tác", render: actionRender, width: 200 },
-    ];
+    return [...baseColumns, { title: "Thao tác", render: actionRender }];
   };
 
   if (authLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <Spin size="large" />
       </div>
     );
@@ -297,7 +314,7 @@ export default function OrderPage() {
         }}
       >
         <h2
-            style={{
+          style={{
             fontSize: 25,
             fontWeight: 700,
             color: "#059669",
@@ -363,15 +380,16 @@ export default function OrderPage() {
                     </Tag>
                   </p>
 
-                  {/* Chỉ hiển thị số khung/máy (Do hãng nhập) */}
-                  {selectedOrder.vinNumber && (
+                  {selectedOrder.carDetail?.vinNumber && (
                     <p>
-                      <b>Số khung:</b> {selectedOrder.vinNumber}
+                      <b>Số khung:</b> {selectedOrder.carDetail.vinNumber}
                     </p>
                   )}
-                  {selectedOrder.engineNumber && (
+
+                  {/* Kiểm tra xem có carDetail và engineNumber không thì mới hiển thị */}
+                  {selectedOrder.carDetail?.engineNumber && (
                     <p>
-                      <b>Số máy:</b> {selectedOrder.engineNumber}
+                      <b>Số máy:</b> {selectedOrder.carDetail.engineNumber}
                     </p>
                   )}
                 </Col>
@@ -380,9 +398,9 @@ export default function OrderPage() {
                   <Timeline
                     items={activities.map((act) => ({
                       color: "gray",
-                      children: `${act.status} - ${new Date(
-                        act.changedAt
-                      ).toLocaleString("vi-VN")}`,
+                      children: `${
+                        statusLabels[act.status] || act.status
+                      } - ${new Date(act.changedAt).toLocaleString("vi-VN")}`,
                     }))}
                   />
                   <Space

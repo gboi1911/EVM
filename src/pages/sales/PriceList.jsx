@@ -1,20 +1,19 @@
+// src/pages/sales/PriceListPage.jsx
 import React, { useState, useEffect } from "react";
-import { Table, Card, Typography, Tag, Modal, Select, notification, Image } from "antd";
+import { Table, Card, Typography, Tag, Modal, notification, Image, Spin } from "antd";
 import { useAuth } from "../../context/AuthContext";
 import { getPriceListByLevel } from "../../api/price";
 import moment from "moment";
 
 const { Title } = Typography;
-const { Option } = Select;
 
-// 1. KHẮC PHỤC LỖI ẢNH: Tạo map ánh xạ từ carModelName sang link ảnh
-// Bạn có thể thay thế các link này bằng link thật hoặc import ảnh từ assets
+// Map ảnh xe
 const CAR_IMAGES = {
   "TESLA_MODEL_X": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1800,w_2880,c_fit,f_auto,q_auto:best/Model-X-Main-Hero-Desktop-RHD",
   "TESLA_MODEL_S": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-S-Main-Hero-Desktop-LHD.jpg",
   "TESLA_MODEL_3": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-3-Main-Hero-Desktop-LHD.jpg",
   "TESLA_MODEL_Y": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1800,w_2880,c_fit,f_auto,q_auto:best/Model-Y-Main-Hero-Desktop-Global",
-  "TESLA_MODEL_Z": "https://example.com/placeholder-car.jpg", // Ảnh mặc định nếu chưa có
+  "TESLA_MODEL_Z": "https://example.com/placeholder-car.jpg",
 };
 
 export default function PriceList() {
@@ -23,47 +22,43 @@ export default function PriceList() {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   
-  // State cho Staff chọn level
-  const [selectedLevel, setSelectedLevel] = useState(null);
-  
-  const { user } = useAuth();
-
-  // Kiểm tra xem user có phải là Staff không (giả sử role là 'STAFF' hoặc 'ADMIN')
-  // Bạn hãy điều chỉnh điều kiện này theo đúng logic role của dự án bạn
-  const isStaff = user?.role === 'STAFF' || user?.role === 'ADMIN' || !user?.level;
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Logic mới:
-    // 1. Nếu là Dealer (có user.level): Fetch theo user.level
-    // 2. Nếu là Staff: Chỉ fetch khi họ đã chọn selectedLevel
-    if (user?.level) {
-      fetchPricePrograms(user.level);
-    } else if (isStaff && selectedLevel) {
-      fetchPricePrograms(selectedLevel);
-    }
-  }, [user, selectedLevel]); // Chạy lại khi user đổi hoặc Staff chọn level mới
+    // Hàm fetch
+    const fetchPricePrograms = async () => {
+      setLoading(true);
+      try {
+        // ❗️ LOGIC XỬ LÝ LEVEL QUAN TRỌNG:
+        // Nếu user có level (Manager) -> dùng user.level
+        // Nếu user không có level (Staff) -> gửi -1 (Backend tự lấy level của cha)
+        const levelToSend = (user.level !== null && user.level !== undefined) ? user.level : -1;
 
-  const fetchPricePrograms = async (level) => {
-    setLoading(true);
-    try {
-      const data = await getPriceListByLevel(level);
-      setPricePrograms(data);
-    } catch (error) {
-      notification.error({
-        message: "Lỗi",
-        description: "Không thể tải bảng giá",
-      });
-      setPricePrograms([]); // Clear data nếu lỗi
-    } finally {
-      setLoading(false);
+        const data = await getPriceListByLevel(levelToSend);
+        setPricePrograms(data);
+      } catch (error) {
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể tải bảng giá",
+        });
+        setPricePrograms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Gọi fetch khi đã có user
+    if (!authLoading && user) {
+      fetchPricePrograms();
     }
-  };
+  }, [authLoading, user]);
 
   const handleViewDetails = (program) => {
     setSelectedProgram(program);
     setModalVisible(true);
   };
 
+  // Cấu hình cột bảng chính
   const columns = [
     {
       title: "Mã CT",
@@ -93,19 +88,19 @@ export default function PriceList() {
       title: "Thao tác",
       key: "action",
       render: (_, record) => (
-        <a onClick={() => handleViewDetails(record)} className="text-emerald-600 hover:text-emerald-800">
+        <a onClick={() => handleViewDetails(record)} style={{ color: "#059669", fontWeight: 500, cursor: "pointer" }}>
           Xem chi tiết
         </a>
       ),
     },
   ];
 
+  // Cấu hình cột bảng chi tiết (Modal)
   const detailColumns = [
     {
       title: "Hình ảnh",
       key: "image",
       render: (_, record) => (
-        // Sử dụng mapping CAR_IMAGES để hiển thị ảnh
         <Image
           width={100}
           src={CAR_IMAGES[record.carModelName] || "https://via.placeholder.com/150?text=No+Image"} 
@@ -118,7 +113,7 @@ export default function PriceList() {
       title: "Mẫu xe",
       dataIndex: "carModelName",
       key: "carModelName",
-      render: (text) => <span className="font-semibold">{text}</span>
+      render: (text) => <span style={{ fontWeight: "bold" }}>{text}</span>
     },
     {
       title: "Giá tối thiểu",
@@ -131,9 +126,10 @@ export default function PriceList() {
       title: "Giá đề xuất",
       dataIndex: "suggestedPrice",
       key: "suggestedPrice",
-      className: "text-emerald-600 font-medium",
       render: (price) =>
-        price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
+        <span style={{ color: "#059669", fontWeight: "bold" }}>
+            {price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+        </span>,
     },
     {
       title: "Giá tối đa",
@@ -144,30 +140,21 @@ export default function PriceList() {
     },
   ];
 
+  if (authLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <Card className="shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <Title level={4} className="text-emerald-700 m-0">
+    <div style={{ minHeight: "100vh", backgroundColor: "#f3f4f6", padding: 24 }}>
+      <Card bordered={false} style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <Title level={4} style={{ color: "#059669", margin: 0 }}>
             Bảng giá theo cấp đại lý
           </Title>
-          
-          {/* 2. TÍNH NĂNG CHO STAFF: Dropdown chọn cấp độ */}
-          {isStaff && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Xem theo cấp:</span>
-              <Select
-                placeholder="Chọn cấp đại lý"
-                style={{ width: 200 }}
-                onChange={(value) => setSelectedLevel(value)}
-                value={selectedLevel}
-              >
-                <Option value={1}>Đại lý Cấp 1</Option>
-                <Option value={2}>Đại lý Cấp 2</Option>
-                <Option value={3}>Đại lý Cấp 3</Option>
-              </Select>
-            </div>
-          )}
         </div>
 
         <Table
@@ -176,14 +163,13 @@ export default function PriceList() {
           dataSource={pricePrograms}
           rowKey="priceProgramId"
           pagination={{ pageSize: 10 }}
-          className="bg-white"
-          locale={{ emptyText: isStaff && !selectedLevel ? "Vui lòng chọn cấp đại lý để xem dữ liệu" : "Không có dữ liệu" }}
+          locale={{ emptyText: "Không có dữ liệu bảng giá" }}
         />
       </Card>
 
       <Modal
         title={
-          <span className="text-emerald-700 text-lg font-bold">
+          <span style={{ color: "#059669", fontSize: 18, fontWeight: "bold" }}>
             Chi tiết bảng giá - Cấp {selectedProgram?.dealerHierarchy}
           </span>
         }
@@ -191,7 +177,7 @@ export default function PriceList() {
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={1000}
-        className="bg-white top-10"
+        style={{ top: 20 }}
       >
         {selectedProgram && (
           <Table
@@ -199,8 +185,7 @@ export default function PriceList() {
             dataSource={selectedProgram.programDetails}
             rowKey="id"
             pagination={false}
-            className="bg-white"
-            scroll={{ y: 400 }} // Thêm scroll nếu danh sách dài
+            scroll={{ y: 400 }} 
           />
         )}
       </Modal>
