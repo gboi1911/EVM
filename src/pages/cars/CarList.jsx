@@ -8,7 +8,6 @@ import {
   Image,
   Modal,
   Input,
-  Space,
   Spin,
   Carousel,
   message,
@@ -20,6 +19,7 @@ import {
   SearchOutlined,
   LeftOutlined,
   RightOutlined,
+  SwapOutlined, // Thêm icon cho nút so sánh
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { getAllCars, getCarDetails } from "../../api/cars";
@@ -42,7 +42,6 @@ export default function CarList() {
         const res = await getAllCars({ pageNo: 0, pageSize: 50 });
         console.log("CAR API RESPONSE:", res);
 
-        // Gán tạm giá trị price = 0 (để hiển thị 'LIÊN HỆ')
         const carsWithPrice = (res.carInfoGetDtos || []).map((car) => ({
           ...car,
           price: 0,
@@ -72,7 +71,8 @@ export default function CarList() {
     if (selectedCars.length === 2) {
       navigate(`/vehicles/compare?ids=${selectedCars.join(",")}`);
     } else {
-      setCompareModal(true);
+      // Nếu chưa chọn đủ 2 xe, báo lỗi nhẹ thay vì mở modal rỗng
+      message.warning("Vui lòng chọn đủ 2 xe để so sánh!");
     }
   };
 
@@ -118,25 +118,45 @@ export default function CarList() {
         Danh mục xe điện
       </h2>
 
-      {/* Ô tìm kiếm */}
-      <Space
-        direction="vertical"
-        size="middle"
+      {/* --- PHẦN THANH TÌM KIẾM VÀ NÚT SO SÁNH (ĐÃ CHỈNH SỬA) --- */}
+      <div
         style={{
           display: "flex",
+          justifyContent: "space-between", // Tách 2 phần sang 2 bên
+          alignItems: "center",
           marginBottom: 24,
           background: "#f9fafb",
           padding: 16,
           borderRadius: 8,
+          flexWrap: "wrap", // Để responsive tốt trên mobile
+          gap: 16,
         }}
       >
+        {/* Ô tìm kiếm */}
         <Input
           placeholder="Tìm theo tên xe..."
           prefix={<SearchOutlined />}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ maxWidth: 400, width: "100%" }}
+          size="large"
         />
-      </Space>
+
+        {/* Nút so sánh - Đặt ngay cạnh thanh tìm kiếm */}
+        <Button
+          type="primary"
+          size="large"
+          icon={<SwapOutlined />}
+          disabled={selectedCars.length !== 2}
+          onClick={handleCompare}
+          style={{
+            backgroundColor: selectedCars.length === 2 ? "#1890ff" : undefined,
+            fontWeight: 600
+          }}
+        >
+          So sánh ({selectedCars.length}/2)
+        </Button>
+      </div>
 
       {/* Danh sách xe */}
       <Row gutter={[24, 24]} justify="center">
@@ -205,7 +225,7 @@ export default function CarList() {
                         block
                         onClick={() => handleSelectCar(car.carId)}
                       >
-                        {isSelected ? "Đã chọn" : "Chọn so sánh"}
+                        {isSelected ? "Bỏ chọn" : "So sánh"}
                       </Button>
                       <Button
                         onClick={() => handleViewDetail(car.carId)}
@@ -230,17 +250,7 @@ export default function CarList() {
         )}
       </Row>
 
-      {/* Nút so sánh */}
-      <div style={{ textAlign: "center", marginTop: 32 }}>
-        <Button
-          type="primary"
-          size="large"
-          disabled={selectedCars.length !== 2}
-          onClick={handleCompare}
-        >
-          So sánh 2 xe đã chọn
-        </Button>
-      </div>
+      {/* (Đã xóa nút so sánh ở dưới đáy) */}
 
       {/* Modal Chi tiết xe */}
       <Modal

@@ -63,10 +63,10 @@ export default function Navbar() {
       label: "Xe",
       children: [
         { key: "view", label: <Link to="/vehicles">Danh mục xe</Link> },
-        {
-          key: "compare",
-          label: <Link to="/vehicles/compare">So sánh</Link>,
-        },
+        // {
+        //   key: "compare",
+        //   label: <Link to="/vehicles/compare">So sánh</Link>,
+        // },
       ],
     },
     {
