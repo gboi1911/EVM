@@ -4,7 +4,7 @@ import apiClient from "./apiClient.js"; // <-- Sửa đường dẫn
 // === API ĐƠN HÀNG CƠ BẢN ===
 
 export const getListOrders = (params) => {
-  return apiClient.get('/orders', { params });
+  return apiClient.get("/orders", { params });
 };
 
 export const getOrderById = (id) => {
@@ -12,7 +12,7 @@ export const getOrderById = (id) => {
 };
 
 export const createOrder = (orderData) => {
-  return apiClient.post('/orders', orderData);
+  return apiClient.post("/orders", orderData);
 };
 
 export const updateOrder = (id, payload) => {
@@ -38,3 +38,18 @@ export const addPaymentToOrder = (id, paymentData) => {
 export const getOrderActivities = (orderId) => {
   return apiClient.get(`/orders/${orderId}/activities`);
 };
+
+// === API DUYỆT ĐƠN HÀNG (Shipments) ===
+export const getOrderPending = () => {
+  return apiClient.get("/orders/pending");
+};
+
+export const getOrderByStatus = (status) => {
+  return apiClient.get(
+    `/orders/status?orderStatus=${status}&pageNo=0&pageSize=10`
+  );
+};
+
+// export const approveOrder = (orderId, carDetailId, orderStatus) => {
+//   return apiClient.patch("/orders/approve-order");
+// };

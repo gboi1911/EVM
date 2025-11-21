@@ -27,6 +27,7 @@ import {
   deletePriceById,
 } from "../../api/price";
 import moment from "moment";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const dealerOptions = [
   { label: "Đại lý 1", value: 1 },
@@ -43,6 +44,7 @@ export default function ManagePrice() {
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailData, setDetailData] = useState([]);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     fetchPrices(selectedLevel);
@@ -61,7 +63,6 @@ export default function ManagePrice() {
   };
 
   const openDetail = (record) => {
-    // record.programDetails là array
     setDetailData(record.programDetails || []);
     setDetailOpen(true);
   };
@@ -72,13 +73,13 @@ export default function ManagePrice() {
 
     if (record) {
       const details = await getPriceDetailsById(record.priceProgramId);
+
       form.setFieldsValue({
         dealerHierarchy: details.dealerHierarchy,
         startDate: moment(details.startDay),
         endDate: moment(details.endDay),
       });
     } else {
-      // default new
       const now8am = moment().set({
         hour: 7,
         minute: 0,
@@ -89,7 +90,7 @@ export default function ManagePrice() {
       form.setFieldsValue({
         dealerHierarchy: null,
         startDate: now8am,
-        endDate: now8am.clone().add(30, "days"), // auto end 30 ngày sau
+        endDate: now8am.clone().add(30, "days"),
       });
     }
   };
@@ -99,8 +100,8 @@ export default function ManagePrice() {
       const values = await form.validateFields();
       setLoading(true);
 
-      const startDay = values.startDate.format("YYYY-MM-DDTHH:mm:ssZ");
-      const endDay = values.endDate.format("YYYY-MM-DDTHH:mm:ssZ");
+      const startDay = values.startDate.toISOString();
+      const endDay = values.endDate.toISOString();
 
       const requestBody = {
         dealerHierarchy: values.dealerHierarchy,
@@ -109,18 +110,36 @@ export default function ManagePrice() {
       };
 
       if (editing) {
+        // Update
         await updatePriceById(editing.priceProgramId, requestBody);
+
         setData((prev) =>
           prev.map((item) =>
             item.priceProgramId === editing.priceProgramId
-              ? { ...item, ...requestBody }
+              ? {
+                  ...item,
+                  dealerHierarchy: values.dealerHierarchy,
+                  startDate: startDay,
+                  endDate: endDay,
+                }
               : item
           )
         );
+
         notification.success({ message: "Cập nhật thành công!" });
       } else {
+        // Create
         const added = await createPrice(requestBody);
-        setData((prev) => [...prev, added]);
+
+        setData((prev) => [
+          ...prev,
+          {
+            ...added,
+            startDate: startDay,
+            endDate: endDay,
+          },
+        ]);
+
         notification.success({ message: "Thêm mới thành công!" });
       }
 
@@ -168,13 +187,13 @@ export default function ManagePrice() {
       key: "action",
       render: (_, record) => (
         <Space>
-          <Button
+          {/* <Button
             icon={<EyeOutlined />}
             onClick={() => openDetail(record)}
             type="link"
           >
             Xem
-          </Button>
+          </Button> */}
           <Button
             icon={<EditOutlined />}
             onClick={() => openModal(record)}
@@ -192,6 +211,14 @@ export default function ManagePrice() {
               Xóa
             </Button>
           </Popconfirm>
+          <Button
+            type="link"
+            onClick={() =>
+              navigate(`/homeEVM/price-detail/${record.priceProgramId}`)
+            } // Navigate to price detail page
+          >
+            Chi tiết giá
+          </Button>
         </Space>
       ),
     },
@@ -283,7 +310,7 @@ export default function ManagePrice() {
       >
         <Table
           columns={[
-            { title: "Mẫu xe", dataIndex: "carName" },
+            { title: "Mẫu xe", dataIndex: "carModelName" },
             { title: "Giá tối thiểu", dataIndex: "minPrice" },
             { title: "Giá đề xuất", dataIndex: "suggestedPrice" },
             { title: "Giá tối đa", dataIndex: "maxPrice" },
