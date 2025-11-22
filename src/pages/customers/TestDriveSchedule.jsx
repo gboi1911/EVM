@@ -6,7 +6,7 @@ import {
   Typography,
   Spin,
   Modal,
-  Table, // 'Table' làm giao diện chính
+  Table,
   Tag,
   message,
   Popconfirm,
@@ -16,11 +16,9 @@ import {
   Input,
 } from "antd";
 import {
-  CalendarOutlined,
-  UserOutlined,
-  DeleteOutlined,
   EyeOutlined,
   PlusOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import {
   getAllSlots,
@@ -28,16 +26,13 @@ import {
   cancelBooking,
   deleteSlot,
   bookTestDrive,
-  getTrialCarModels,
 } from "../../api/testDrive.js";
-import { listCustomers, createCustomer } from "../../api/customer.js";
+import { listCustomers } from "../../api/customer.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import moment from "moment";
 import "moment/locale/vi";
 
-// (Không cần import ảnh)
-
-const { Title, Text } = Typography;
+const { Title } = Typography;
 moment.locale("vi");
 
 export default function TestDriveSchedule() {
@@ -91,7 +86,7 @@ export default function TestDriveSchedule() {
     }
   }, [authLoading]);
 
-  // (Các hàm handle... giữ nguyên)
+  // --- CÁC HÀM XỬ LÝ ---
   const handleViewDetails = async (slot) => {
     setViewModalOpen(true);
     setModalLoading(true);
@@ -106,6 +101,7 @@ export default function TestDriveSchedule() {
       setModalLoading(false);
     }
   };
+
   const handleCancelBooking = async (bookingId) => {
     try {
       await cancelBooking(bookingId);
@@ -118,6 +114,7 @@ export default function TestDriveSchedule() {
       message.error("Hủy đặt chỗ thất bại: " + err.message);
     }
   };
+
   const handleDeleteSlot = async (slotId) => {
     try {
       await deleteSlot(slotId);
@@ -127,6 +124,7 @@ export default function TestDriveSchedule() {
       message.error("Xóa slot thất bại");
     }
   };
+
   const handleOpenBookingModal = (slot) => {
     if (slot.bookedCount >= slot.numCustomers) {
       message.warning("Slot này đã đầy. Không thể đặt thêm.");
@@ -166,18 +164,18 @@ export default function TestDriveSchedule() {
       setBookingLoading(false);
     }
   };
-  
-  // (Định dạng ngày/giờ)
+
+  // --- FORMAT NGÀY GIỜ ---
   const formatDate = (isoString) => moment(isoString).format("DD/MM/YYYY");
   const formatTime = (isoString) => moment(isoString).format("HH:mm");
-
-  // ❗️ SỬA LỖI: Thêm lại hàm 'formatDateTime'
   const formatDateTime = (isoString) => {
     if (!isoString) return "N/A";
     return moment(isoString).format("HH:mm [ngày] DD/MM/YYYY");
   };
+  const getCarNameFromSlot = (slot) =>
+    slot?.carModelInSlotDetailDto?.[0]?.carModelName || "Xe không xác định";
 
-  // (Cột cho Modal [Xem])
+  // --- CẤU HÌNH CỘT MODAL ---
   const bookingColumns = useMemo(() => {
     const cols = [
       { title: "Mã đặt", dataIndex: "id" },
@@ -205,11 +203,8 @@ export default function TestDriveSchedule() {
     return cols;
   }, [isManager]);
 
-  const getCarNameFromSlot = (slot) =>
-    slot?.carModelInSlotDetailDto?.[0]?.carModelName || "Xe không xác định";
-
-  // Định nghĩa cột cho Bảng chính
-  const slotTableColumns = [
+  // --- CẤU HÌNH CỘT BẢNG CHÍNH ---
+ const slotTableColumns = [
     {
       title: "#",
       dataIndex: "id",
@@ -255,51 +250,65 @@ export default function TestDriveSchedule() {
     {
       title: "Thao tác",
       key: "action",
-      render: (slot) => (
-        <Space size="small">
-          {/* Nút Đặt chỗ (Chỉ Staff thấy) */}
-          {!isManager && (
-            <Button
-              type="primary"
-              ghost
-              icon={<PlusOutlined />}
-              onClick={() => handleOpenBookingModal(slot)}
-              disabled={
-                slot.bookedCount >= slot.numCustomers
-              }
-            >
-              Đặt chỗ
-            </Button>
-          )}
-          
-          {/* Nút Xem (Cả 2 vai trò) */}
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetails(slot)}
-          >
-            Xem
-          </Button>
-
-          {/* Nút Xóa Slot (Chỉ Manager thấy) */}
-          {isManager && (
-            <Popconfirm
-              title="Xóa toàn bộ slot này?"
-              onConfirm={() => handleDeleteSlot(slot.id)}
-              okText="OK"
-              cancelText="Không"
-            >
+      // 🛠️ ĐÃ SỬA LỖI: Thêm từ khóa 'return' để hiển thị giao diện
+      render: (slot) => {
+        const isExpired = moment(slot.startTime).isBefore(moment());
+        
+        return (
+          <Space size="small">
+            {/* Nút Đặt chỗ (Chỉ Staff thấy) */}
+            {!isManager && (
               <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
+                type="primary"
+                ghost
+                icon={<PlusOutlined />}
+                onClick={() => handleOpenBookingModal(slot)}
+                disabled={
+                  slot.bookedCount >= slot.numCustomers || isExpired
+                }
               >
-                Xóa Slot
+                Đặt chỗ
               </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+            )}
+
+            {/* Nút Xem (Cả 2 vai trò) */}
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetails(slot)}
+            >
+              Xem
+            </Button>
+
+            {/* Nút Xóa Slot (Chỉ Manager thấy) */}
+            {isManager && (
+              <Popconfirm
+                title="Xóa toàn bộ slot này?"
+                onConfirm={() => handleDeleteSlot(slot.id)}
+                okText="OK"
+                cancelText="Không"
+              >
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                >
+                  Xóa Slot
+                </Button>
+              </Popconfirm>
+            )}
+
+            {/* 🔶 LABEL MỚI: Đã quá hạn
+                Dùng màu 'orange' để nổi bật nhưng khác màu đỏ của nút xóa
+            */}
+            {isExpired && (
+              <Tag color="orange" style={{ marginLeft: 8 }}>
+                Đã quá hạn
+              </Tag>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -318,7 +327,6 @@ export default function TestDriveSchedule() {
     );
   }
 
-  // Render giao diện Bảng
   return (
     <div style={{ padding: "24px", backgroundColor: "#f3f4f6" }}>
       <Title
@@ -339,8 +347,6 @@ export default function TestDriveSchedule() {
           />
         </Spin>
       </Card>
-
-      {/* (Các Modal giữ nguyên) */}
 
       {/* Modal xem chi tiết */}
       <Modal
@@ -400,9 +406,7 @@ export default function TestDriveSchedule() {
             label="Số điện thoại khách hàng"
             rules={[{ required: true, message: "Vui lòng nhập SĐT!" }]}
           >
-            <Input
-              placeholder="Nhập SĐT (ví dụ: 0901234567)"
-            />
+            <Input placeholder="Nhập SĐT (ví dụ: 0901234567)" />
           </Form.Item>
 
           <Form.Item
@@ -410,9 +414,7 @@ export default function TestDriveSchedule() {
             label="Họ và tên Khách hàng"
             rules={[{ required: true, message: "Vui lòng nhập tên khách hàng!" }]}
           >
-            <Input
-              placeholder="Nhập họ và tên khách hàng"
-            />
+            <Input placeholder="Nhập họ và tên khách hàng" />
           </Form.Item>
         </Form>
       </Modal>

@@ -49,7 +49,9 @@ export const getOrderByStatus = (status) => {
     `/orders/status?orderStatus=${status}&pageNo=0&pageSize=10`
   );
 };
-
+export const getOrdersByDealer = () => {
+  return apiClient.get("/orders/dealer");
+};
 // export const approveOrder = (orderId, carDetailId, orderStatus) => {
 //   return apiClient.patch("/orders/approve-order");
 // };
