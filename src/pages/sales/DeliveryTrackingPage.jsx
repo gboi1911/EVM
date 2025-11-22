@@ -39,11 +39,12 @@ const orderStatusMap = {
   CANCELLED: { text: "Đã hủy", color: "gray" }
 };
 
-// 2. ACTION MAP: Chỉ giữ lại hành động cho bước 'DELIVERED' -> 'COMPLETED'
+// 2. ACTION MAP: Cấu hình các nút chuyển trạng thái tiếp theo
 const nextStepMap = {
   PENDING: null,
   APPROVED: null,      
-  IN_DELIVERY: null,   
+  // 👇 CẬP NHẬT Ở ĐÂY: Thêm hành động xác nhận giao xe
+  IN_DELIVERY: { next: "DELIVERED", text: "Xác nhận đã giao xe", icon: <HomeOutlined /> }, 
   DELIVERED: { next: "COMPLETED", text: "Hoàn tất đơn", icon: <SmileOutlined /> },
   COMPLETED: null
 };
