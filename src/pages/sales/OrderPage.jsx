@@ -21,7 +21,6 @@ import {
   updateOrder,
   getOrderActivities,
 } from "../../api/order.js";
-import { deliveriedOrder, finisheddOrder } from "../../api/car.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const { TabPane } = Tabs;
@@ -116,6 +115,7 @@ export default function OrderPage() {
       // Gộp và lọc lại phía Client để chắc chắn
       const allOrders = responses.flatMap((res) => res.data || res || []);
 
+      // ❗️ LỌC LẠI: Dùng '==' để so sánh an toàn giữa string và number
       const filteredOrders = isManager
         ? allOrders
         : allOrders.filter((order) => order.staff?.id == user.userId);
@@ -162,13 +162,15 @@ export default function OrderPage() {
     setActivities([]);
 
     try {
+      // 🛠️ FIX LỖI 1: Khai báo detailRes/activityRes thì phải dùng đúng tên biến
       const [detailRes, activityRes] = await Promise.all([
         getOrderById(record.id),
         getOrderActivities(record.id),
       ]);
-      setSelectedOrder(detailResponse.data || detailResponse);
+      
+      setSelectedOrder(detailRes.data || detailRes);
       setActivities(
-        activityResponse.data?.activities || activityResponse.activities || []
+        activityRes.data?.activities || activityRes.activities || []
       );
     } catch {
       message.error("Lỗi khi lấy chi tiết đơn");
@@ -209,7 +211,6 @@ export default function OrderPage() {
     {
       title: "Thanh toán",
       dataIndex: "paymentStatus",
-      // ❗️ SỬA LỖI: Hiển thị tiếng Việt cho trạng thái thanh toán
       render: (s) => (
         <Tag color={paymentStatusColors[s] || "default"}>
           {paymentStatusLabels[s] || s}
@@ -219,7 +220,6 @@ export default function OrderPage() {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      // ❗️ SỬA LỖI: Hiển thị tiếng Việt cho trạng thái đơn hàng
       render: (s) => (
         <Tag color={statusColors[s] || "default"}>{statusLabels[s] || s}</Tag>
       ),
@@ -387,7 +387,6 @@ export default function OrderPage() {
                     </p>
                   )}
 
-                  {/* Kiểm tra xem có carDetail và engineNumber không thì mới hiển thị */}
                   {selectedOrder.carDetail?.engineNumber && (
                     <p>
                       <b>Số máy:</b> {selectedOrder.carDetail.engineNumber}
@@ -404,6 +403,7 @@ export default function OrderPage() {
                       } - ${new Date(act.changedAt).toLocaleString("vi-VN")}`,
                     }))}
                   />
+                  {/* 🛠️ FIX LỖI 2: Sửa cấu trúc JSX (Space) và FIX LỖI 3: Tên biến selected -> selectedOrder */}
                   <Space
                     direction="vertical"
                     style={{ width: "100%", marginTop: 10 }}
@@ -413,23 +413,23 @@ export default function OrderPage() {
                       href={selectedOrder.quotationUrl}
                       target="_blank"
                       disabled={!selectedOrder.quotationUrl}
+                      block 
                     >
                       Báo giá
                     </Button>
-                  )}
 
-                  {selected.status === "DELIVERED" && (
                     <Button
                       icon={<FilePdfOutlined />}
                       href={selectedOrder.contractUrl}
                       target="_blank"
                       disabled={!selectedOrder.contractUrl}
+                      block
                     >
                       Hợp đồng
                     </Button>
-                  )}
-                </div>
-              </>
+                  </Space>
+                </Col>
+              </Row>
             )
           )}
         </Modal>
