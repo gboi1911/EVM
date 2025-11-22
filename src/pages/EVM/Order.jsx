@@ -127,11 +127,12 @@ const OrderPage = () => {
     },
     {
       title: "Hành động",
-      render: (_, record) => (
-        <Button type="primary" onClick={() => handleApproveClick(record)}>
-          Duyệt đơn
-        </Button>
-      ),
+      render: (_, record) =>
+        record.paymentStatus == "PENDING" ? null : (
+          <Button type="primary" onClick={() => handleApproveClick(record)}>
+            Duyệt đơn
+          </Button>
+        ),
     },
   ];
 
@@ -218,6 +219,12 @@ const OrderPage = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Tên xe">
               {randomCar.carName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Số khung">
+              {randomCar.vinNumber}
+            </Descriptions.Item>
+            <Descriptions.Item label="Số máy">
+              {randomCar.engineNumber}
             </Descriptions.Item>
             <Descriptions.Item label="Khách hàng">
               {selectedOrder.customer.fullName}

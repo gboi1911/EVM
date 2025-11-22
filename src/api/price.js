@@ -154,3 +154,18 @@ export const updateDetailInPriceProgram = async (detailId, detailData) => {
   }
   return await response.json();
 };
+
+export const getAllPricePrograms = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/price-program/all`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch all price programs");
+  }
+  return await response.json();
+};

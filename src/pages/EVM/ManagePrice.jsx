@@ -25,6 +25,7 @@ import {
   updatePriceById,
   createPrice,
   deletePriceById,
+  getAllPricePrograms,
 } from "../../api/price";
 import moment from "moment";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
@@ -50,10 +51,12 @@ export default function ManagePrice() {
     fetchPrices(selectedLevel);
   }, [selectedLevel]);
 
-  const fetchPrices = async (level) => {
+  const fetchPrices = async () => {
     setLoading(true);
     try {
-      const prices = await getPriceListByLevel(level);
+      const response = await getAllPricePrograms();
+      // Nếu API trả về object chứa priceProgramGetDtoList
+      const prices = response.priceProgramGetDtoList || [];
       setData(prices);
     } catch (error) {
       notification.error({ message: "Failed to fetch prices!" });

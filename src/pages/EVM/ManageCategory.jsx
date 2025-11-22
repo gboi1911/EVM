@@ -31,13 +31,15 @@ export default function ManageCategory() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const { notification } = AntdApp.useApp();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(null);
 
   // ✅ Load categories from backend
   const loadData = async () => {
     setLoading(true);
     try {
       const response = await fetchCategories();
-      setCategories(response.carInfoGetDtos || []);
+      setCategories(response);
     } catch (err) {
       notification.error({
         message: "Lỗi tải danh mục",
@@ -107,10 +109,26 @@ export default function ManageCategory() {
     }
   };
 
+  const openDetail = (record) => {
+    setSelectedModel(record);
+    setDetailOpen(true);
+  };
+
   // ✅ Table columns
   const columns = [
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    { title: "Tên danh mục", dataIndex: "categoryName", key: "categoryName" },
+    { title: "Tên danh mục", dataIndex: "carModelName", key: "carModelName" },
+
+    {
+      title: "Chi tiết",
+      key: "view",
+      render: (_, record) => (
+        <Button type="link" onClick={() => openDetail(record)}>
+          Xem
+        </Button>
+      ),
+    },
+
     {
       title: "Thao tác",
       key: "action",
@@ -193,6 +211,78 @@ export default function ManageCategory() {
             <Input placeholder="Nhập tên danh mục (VD: Sedan, SUV...)" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Chi tiết dòng xe"
+        open={detailOpen}
+        onCancel={() => setDetailOpen(false)}
+        footer={null}
+        width={900}
+      >
+        {selectedModel && (
+          <>
+            <h3 style={{ fontWeight: 600 }}>
+              Model: {selectedModel.carModelName}
+            </h3>
+
+            <h4 className="mt-4">Danh sách xe (Car Details)</h4>
+            <Table
+              dataSource={selectedModel.carDetails}
+              rowKey="carDetailId"
+              pagination={false}
+              columns={[
+                { title: "ID", dataIndex: "carDetailId" },
+                { title: "Tên xe", dataIndex: "carName" },
+                { title: "Trạng thái", dataIndex: "carStatus" },
+                { title: "VIN", dataIndex: "vinNumber" },
+                { title: "Engine", dataIndex: "engineNumber" },
+              ]}
+            />
+
+            <h4 className="mt-6">Ảnh xe</h4>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {selectedModel.carDetails[0]?.carImages?.map((img, index) => (
+                <img
+                  key={index}
+                  src={img.fileUrl}
+                  style={{
+                    width: 120,
+                    height: 80,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                  }}
+                />
+              ))}
+            </div>
+
+            <h4 className="mt-6">Thông số kỹ thuật</h4>
+            <pre
+              style={{
+                background: "#f9f9f9",
+                padding: 12,
+                borderRadius: 8,
+              }}
+            >
+              {JSON.stringify(
+                selectedModel.carDetails[0]?.performanceDetailGetDto,
+                null,
+                2
+              )}
+            </pre>
+
+            <h4 className="mt-6">Kích thước</h4>
+            <pre
+              style={{
+                background: "#f9f9f9",
+                padding: 12,
+                borderRadius: 8,
+              }}
+            >
+              {JSON.stringify(selectedModel.carDetails[0]?.dimension, null, 2)}
+            </pre>
+          </>
+        )}
       </Modal>
     </div>
   );

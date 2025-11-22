@@ -50,7 +50,7 @@ export const getAllAccounts = async (pageNo = 0, pageSize = 10) => {
   const token = localStorage.getItem("access_token");
 
   const response = await fetch(
-    `http://localhost:8000/evdealer/api/v1/user/all?pageNo=${pageNo}&pageSize=${pageSize}`,
+    `${API_BASE}/user/all?pageNo=${pageNo}&pageSize=${pageSize}`,
     {
       method: "GET",
       headers: {
@@ -120,20 +120,25 @@ export const updateProfile = async (userIdOrProfileData, profileData) => {
   return await response.json();
 };
 
-export const changePassword = async (oldPassword, newPassword) => {
+export const changePassword = async (currentPassword, newPassword) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/user/change-password`, {
+
+  const url = `${API_BASE}/user/change-password?currentPassword=${encodeURIComponent(
+    currentPassword
+  )}&newPassword=${encodeURIComponent(newPassword)}`;
+
+  const response = await fetch(url, {
     method: "PATCH",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ oldPassword, newPassword }),
   });
+
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Password change failed: ${response.status} ${errorText}`);
   }
+
   return await response.json();
 };
 

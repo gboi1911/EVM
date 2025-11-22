@@ -8,11 +8,13 @@ import {
   notification,
   Divider,
   Typography,
+  Modal,
+  Button,
 } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
 import { filterAccountsByRole } from "../../api/authen";
-import { getInventory, getSalesSpeed } from "../../api/inventory";
-import { getCarDetails } from "../../api/car";
 import { getWarehouseList } from "../../api/warehouse";
+import { getSalesSpeed } from "../../api/inventory";
 import moment from "moment";
 
 const { Title } = Typography;
@@ -29,6 +31,10 @@ export default function ManageInventoryAndSales() {
     pageSize: 10,
     total: 0,
   });
+
+  // States for modal detail
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailData, setDetailData] = useState([]);
 
   // cache car names to avoid repeated API calls
   const carNameCacheRef = useRef({});
@@ -49,9 +55,9 @@ export default function ManageInventoryAndSales() {
         const dealerOptions = response.userInfoGetDtos
           .filter((dealer) => dealer.isActive) // Only get active dealers
           .map((dealer) => ({
-            label: `${dealer.fullName} (${dealer.username})`, // Show full name and username
+            label: `${dealer.fullName} (${dealer.username})`,
             value: dealer.userId,
-            city: dealer.city, // Additional info if needed
+            city: dealer.city,
           }));
 
         setDealers(dealerOptions);
@@ -77,14 +83,15 @@ export default function ManageInventoryAndSales() {
       const items = response.inventoryInfoGetDtos || [];
 
       // Transform API data to match table columns
-      const mapped = items.map((item, index) => {
+      const mapped = items.map((item) => {
         const car = item.carDetail || {};
         return {
           id: item.id,
-          carId: car.carDetailId || "-",
-          carName: car.carName || car.carModelName || "N/A",
+          carId: car.carModelId || "-",
+          carName: car.carModelName || "N/A",
           quantity: item.quantity ?? 0,
           warehouseCarStatus: item.warehouseCarStatus || "UNKNOWN",
+          carDetail: car,
         };
       });
 
@@ -135,28 +142,35 @@ export default function ManageInventoryAndSales() {
     }
   };
 
+  const openDetail = (record) => {
+    setDetailData(record.carDetail?.carInfoGetDtos || []);
+    setDetailOpen(true);
+  };
+
   const inventoryColumns = [
     { title: "STT", dataIndex: "id", key: "id", width: 80 },
-    { title: "Mã xe", dataIndex: "carId", key: "carId" },
-    { title: "Tên xe", dataIndex: "carName", key: "carName" }, // new column
+    { title: "Mã Model", dataIndex: "carId", key: "carId" },
+    { title: "Tên Model", dataIndex: "carName", key: "carName" },
     { title: "Tổng số lượng", dataIndex: "quantity", key: "quantity" },
-    // {
-    //   title: "Đã đặt trước",
-    //   dataIndex: "reservedQuantity",
-    //   key: "reservedQuantity",
-    // },
-    // {
-    //   title: "Còn trống",
-    //   dataIndex: "availableQuantity",
-    //   key: "availableQuantity",
-    // },
     {
       title: "Trạng thái",
       dataIndex: "warehouseCarStatus",
       key: "status",
       render: (status) => (status === "IN_STOCK" ? "Còn hàng" : "Hết hàng"),
     },
-    // { title: "Ghi chú", dataIndex: "note", key: "note" },
+    {
+      title: "Thao tác",
+      key: "action",
+      render: (_, record) => (
+        <Button
+          icon={<EyeOutlined />}
+          type="link"
+          onClick={() => openDetail(record)}
+        >
+          Xem chi tiết
+        </Button>
+      ),
+    },
   ];
 
   const salesColumns = [
@@ -215,6 +229,41 @@ export default function ManageInventoryAndSales() {
           pagination={false}
         />
       </Card>
+
+      {/* Modal chi tiết xe */}
+      <Modal
+        title="Chi tiết các xe trong Model"
+        open={detailOpen}
+        onCancel={() => setDetailOpen(false)}
+        footer={null}
+        width={900}
+      >
+        <Table
+          columns={[
+            { title: "Mã xe", dataIndex: "carId", key: "carId" },
+            { title: "Tên xe", dataIndex: "carName", key: "carName" },
+            { title: "Số khung", dataIndex: "vinNumber", key: "vinNumber" },
+            { title: "Số máy", dataIndex: "engineNumber", key: "engineNumber" },
+            {
+              title: "Hình ảnh",
+              dataIndex: "carImages",
+              key: "images",
+              render: (images) =>
+                images?.map((img) => (
+                  <img
+                    key={img.fileUrl}
+                    src={img.fileUrl}
+                    alt={img.fileName}
+                    style={{ width: 50, marginRight: 5 }}
+                  />
+                )),
+            },
+          ]}
+          dataSource={detailData}
+          rowKey="carId"
+          pagination={false}
+        />
+      </Modal>
     </div>
   );
 }

@@ -158,6 +158,8 @@ export default function ManageCar() {
           carModelId: Number(values.carModelId),
           carName: values.carName,
           carStatus: values.carStatus,
+          vinNumber: values.vinNumber,
+          engineNumber: values.engineNumber,
           color: values.color,
 
           dimensionPostDto: {
@@ -190,12 +192,35 @@ export default function ManageCar() {
         });
       } else if (modalType === "edit") {
         const updateData = {
-          categoryName: values.categoryName,
+          carModelId: Number(values.carModelId),
           carName: values.carName,
-          price: Number(values.price || 0),
-          driveType: values.driveType,
-          year: Number(values.year || 0),
+          carStatus: values.carStatus,
+          color: values.color,
+          vinNumber: values.vinNumber,
+          engineNumber: values.engineNumber,
+
+          dimensionPostDto: {
+            seatNumber: Number(values.seatNumber),
+            weightLbs: Number(values.weightLbs),
+            groundClearanceIn: Number(values.groundClearanceIn),
+            widthFoldedIn: Number(values.widthFoldedIn),
+            widthExtendedIn: Number(values.widthExtendedIn),
+            lengthMm: Number(values.lengthMm),
+            heightIn: Number(values.heightIn),
+            lengthIn: Number(values.lengthIn),
+            wheelsSizeCm: Number(values.wheelsSizeCm),
+          },
+
+          performancePostDto: {
+            batteryType: values.batteryType,
+            motorType: values.motorType,
+            rangeMiles: Number(values.rangeMiles),
+            accelerationSec: Number(values.accelerationSec),
+            topSpeedMph: Number(values.topSpeedMph),
+            towingLbs: Number(values.towingLbs),
+          },
         };
+
         await updateCar(selectedCar.id, updateData);
         notification.success({
           message: "Cập nhật thành công!",
@@ -378,6 +403,22 @@ export default function ManageCar() {
             />
           </Form.Item>
 
+          <Form.Item
+            name="vinNumber"
+            label="Số khung"
+            rules={[{ required: true, message: "VIN Number is required" }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="engineNumber"
+            label="Số máy"
+            rules={[{ required: true, message: "Engine Number is required" }]}
+          >
+            <Input />
+          </Form.Item>
+
           <Form.Item name="color" label="Màu xe" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -505,6 +546,13 @@ export default function ManageCar() {
           <Descriptions.Item label="Dòng xe">
             {/* {car.category?.categoryName} (ID: {car.category?.id}) */}
             {car.carModelName}
+          </Descriptions.Item>
+          <Descriptions.Item label="Số khung">
+            {car.vinNumber || "-"}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Số máy">
+            {car.engineNumber || "-"}
           </Descriptions.Item>
 
           <Descriptions.Item label="Kích thước">
