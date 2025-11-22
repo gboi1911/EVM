@@ -20,6 +20,7 @@ import {
   getOrderById,
   updateOrder,
   getOrderActivities,
+  getOrdersByDealer, // 1️⃣ THÊM IMPORT API MỚI
 } from "../../api/order.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
@@ -84,42 +85,43 @@ export default function OrderPage() {
   const [activities, setActivities] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // 1. Lấy danh sách đơn hàng
+  // 2️⃣ SỬA LOGIC LẤY DANH SÁCH ĐƠN HÀNG
   const fetchAllOrders = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const statuses = [
-        "PENDING",
-        "APPROVED",
-        "IN_DELIVERY",
-        "COMPLETED",
-        "REJECTED",
-        "CANCELLED",
-      ];
+      let allOrders = [];
 
-      const baseParams = {};
-      // STAFF chỉ xem đơn của mình (dùng userId), MANAGER xem hết
-      if (!isManager) {
-        baseParams.staffId = user.userId;
+      if (isManager) {
+        // --- TRƯỜNG HỢP MANAGER ---
+        // Gọi API /orders/dealer để lấy hết đơn của Staff + Manager
+        const response = await getOrdersByDealer();
+        allOrders = response.data || response || [];
+      } else {
+        // --- TRƯỜNG HỢP STAFF ---
+        // Gọi API cũ theo từng trạng thái
+        const statuses = [
+          "PENDING",
+          "APPROVED",
+          "IN_DELIVERY",
+          "COMPLETED",
+          "REJECTED",
+          "CANCELLED",
+        ];
+        const baseParams = { staffId: user.userId };
+
+        const responses = await Promise.all(
+          statuses.map((status) => {
+            const params = { ...baseParams, status };
+            return getListOrders(params);
+          })
+        );
+        
+        allOrders = responses.flatMap((res) => res.data || res || []);
       }
 
-      const responses = await Promise.all(
-        statuses.map((status) => {
-          const params = { ...baseParams, status };
-          return getListOrders(params);
-        })
-      );
-
-      // Gộp và lọc lại phía Client để chắc chắn
-      const allOrders = responses.flatMap((res) => res.data || res || []);
-
-      // ❗️ LỌC LẠI: Dùng '==' để so sánh an toàn giữa string và number
-      const filteredOrders = isManager
-        ? allOrders
-        : allOrders.filter((order) => order.staff?.id == user.userId);
-
+      // --- XỬ LÝ DỮ LIỆU CHUNG (PHÂN LOẠI VÀO TAB) ---
       const newOrders = {
         PENDING: [],
         APPROVED: [],
@@ -129,7 +131,7 @@ export default function OrderPage() {
         CANCELLED: [],
       };
 
-      filteredOrders.forEach((order) => {
+      allOrders.forEach((order) => {
         if (newOrders[order.status]) {
           newOrders[order.status].push(order);
         }
@@ -142,6 +144,7 @@ export default function OrderPage() {
 
       setOrders(newOrders);
     } catch (e) {
+      console.error(e);
       message.error("Không tải được danh sách đơn hàng: " + e.message);
     } finally {
       setLoading(false);
@@ -162,7 +165,6 @@ export default function OrderPage() {
     setActivities([]);
 
     try {
-      // 🛠️ FIX LỖI 1: Khai báo detailRes/activityRes thì phải dùng đúng tên biến
       const [detailRes, activityRes] = await Promise.all([
         getOrderById(record.id),
         getOrderActivities(record.id),
@@ -403,7 +405,6 @@ export default function OrderPage() {
                       } - ${new Date(act.changedAt).toLocaleString("vi-VN")}`,
                     }))}
                   />
-                  {/* 🛠️ FIX LỖI 2: Sửa cấu trúc JSX (Space) và FIX LỖI 3: Tên biến selected -> selectedOrder */}
                   <Space
                     direction="vertical"
                     style={{ width: "100%", marginTop: 10 }}
