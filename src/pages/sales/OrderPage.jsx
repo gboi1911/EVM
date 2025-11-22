@@ -20,8 +20,8 @@ import {
   getOrderById,
   updateOrder,
   getOrderActivities,
+  getOrdersByDealer, // 1️⃣ THÊM IMPORT API MỚI
 } from "../../api/order.js";
-import { deliveriedOrder, finisheddOrder } from "../../api/car.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const { TabPane } = Tabs;
@@ -85,41 +85,43 @@ export default function OrderPage() {
   const [activities, setActivities] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // 1. Lấy danh sách đơn hàng
+  // 2️⃣ SỬA LOGIC LẤY DANH SÁCH ĐƠN HÀNG
   const fetchAllOrders = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const statuses = [
-        "PENDING",
-        "APPROVED",
-        "IN_DELIVERY",
-        "COMPLETED",
-        "REJECTED",
-        "CANCELLED",
-      ];
+      let allOrders = [];
 
-      const baseParams = {};
-      // STAFF chỉ xem đơn của mình (dùng userId), MANAGER xem hết
-      if (!isManager) {
-        baseParams.staffId = user.userId;
+      if (isManager) {
+        // --- TRƯỜNG HỢP MANAGER ---
+        // Gọi API /orders/dealer để lấy hết đơn của Staff + Manager
+        const response = await getOrdersByDealer();
+        allOrders = response.data || response || [];
+      } else {
+        // --- TRƯỜNG HỢP STAFF ---
+        // Gọi API cũ theo từng trạng thái
+        const statuses = [
+          "PENDING",
+          "APPROVED",
+          "IN_DELIVERY",
+          "COMPLETED",
+          "REJECTED",
+          "CANCELLED",
+        ];
+        const baseParams = { staffId: user.userId };
+
+        const responses = await Promise.all(
+          statuses.map((status) => {
+            const params = { ...baseParams, status };
+            return getListOrders(params);
+          })
+        );
+        
+        allOrders = responses.flatMap((res) => res.data || res || []);
       }
 
-      const responses = await Promise.all(
-        statuses.map((status) => {
-          const params = { ...baseParams, status };
-          return getListOrders(params);
-        })
-      );
-
-      // Gộp và lọc lại phía Client để chắc chắn
-      const allOrders = responses.flatMap((res) => res.data || res || []);
-
-      const filteredOrders = isManager
-        ? allOrders
-        : allOrders.filter((order) => order.staff?.id == user.userId);
-
+      // --- XỬ LÝ DỮ LIỆU CHUNG (PHÂN LOẠI VÀO TAB) ---
       const newOrders = {
         PENDING: [],
         APPROVED: [],
@@ -129,7 +131,7 @@ export default function OrderPage() {
         CANCELLED: [],
       };
 
-      filteredOrders.forEach((order) => {
+      allOrders.forEach((order) => {
         if (newOrders[order.status]) {
           newOrders[order.status].push(order);
         }
@@ -142,6 +144,7 @@ export default function OrderPage() {
 
       setOrders(newOrders);
     } catch (e) {
+      console.error(e);
       message.error("Không tải được danh sách đơn hàng: " + e.message);
     } finally {
       setLoading(false);
@@ -166,9 +169,10 @@ export default function OrderPage() {
         getOrderById(record.id),
         getOrderActivities(record.id),
       ]);
-      setSelectedOrder(detailResponse.data || detailResponse);
+      
+      setSelectedOrder(detailRes.data || detailRes);
       setActivities(
-        activityResponse.data?.activities || activityResponse.activities || []
+        activityRes.data?.activities || activityRes.activities || []
       );
     } catch {
       message.error("Lỗi khi lấy chi tiết đơn");
@@ -209,7 +213,6 @@ export default function OrderPage() {
     {
       title: "Thanh toán",
       dataIndex: "paymentStatus",
-      // ❗️ SỬA LỖI: Hiển thị tiếng Việt cho trạng thái thanh toán
       render: (s) => (
         <Tag color={paymentStatusColors[s] || "default"}>
           {paymentStatusLabels[s] || s}
@@ -219,7 +222,6 @@ export default function OrderPage() {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      // ❗️ SỬA LỖI: Hiển thị tiếng Việt cho trạng thái đơn hàng
       render: (s) => (
         <Tag color={statusColors[s] || "default"}>{statusLabels[s] || s}</Tag>
       ),
@@ -387,7 +389,6 @@ export default function OrderPage() {
                     </p>
                   )}
 
-                  {/* Kiểm tra xem có carDetail và engineNumber không thì mới hiển thị */}
                   {selectedOrder.carDetail?.engineNumber && (
                     <p>
                       <b>Số máy:</b> {selectedOrder.carDetail.engineNumber}
@@ -413,23 +414,23 @@ export default function OrderPage() {
                       href={selectedOrder.quotationUrl}
                       target="_blank"
                       disabled={!selectedOrder.quotationUrl}
+                      block 
                     >
                       Báo giá
                     </Button>
-                  )}
 
-                  {selected.status === "DELIVERED" && (
                     <Button
                       icon={<FilePdfOutlined />}
                       href={selectedOrder.contractUrl}
                       target="_blank"
                       disabled={!selectedOrder.contractUrl}
+                      block
                     >
                       Hợp đồng
                     </Button>
-                  )}
-                </div>
-              </>
+                  </Space>
+                </Col>
+              </Row>
             )
           )}
         </Modal>
