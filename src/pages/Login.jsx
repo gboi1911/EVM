@@ -5,8 +5,9 @@ import { useState } from "react";
 import logo from "../assets/logo.png";
 import { login } from "../api/authen";
 import { App as AntdApp } from "antd"; // Import Ant Design App Component và đổi tên
-
+import { useAuth } from "../context/AuthContext";
 export default function Login() {
+    const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ export default function Login() {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const data = await login(values.username, values.password);
+        const user = await login(values.username, values.password);
       if (values.remember) {
         localStorage.setItem("remembered_username", values.username);
         localStorage.setItem("remembered_password", values.password);
@@ -44,11 +45,11 @@ export default function Login() {
         description: "Chào mừng bạn đến với hệ thống EVD.",
         placement: "topRight",
       });
-      if (data.role === "EVM_ADMIN" || data.role === "EVM_STAFF") {
+      if (user.role === "EVM_ADMIN" || user.role === "EVM_STAFF") {
         navigate("/homeEVM");
       } else if (
-        data.role === "DEALER_MANAGER" ||
-        data.role === "DEALER_STAFF"
+        user.role === "DEALER_MANAGER" ||
+        user.role === "DEALER_STAFF"
       ) {
         navigate("/homeDealer");
       }

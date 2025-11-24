@@ -210,3 +210,25 @@ export const getDealerStaff = async (params) => {
   }
   return await response.json();
 };
+export const getCurrentDealerInfo = async () => {
+  const token = localStorage.getItem("access_token");
+
+  const response = await fetch(`${API_BASE}/dealer/current-dealer-info`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 404) {
+    return null; // dealer chưa tạo → không coi là lỗi
+  }
+
+  if (!response.ok) {
+    const msg = await response.text();
+    throw new Error(`Failed to fetch dealer: ${msg}`);
+  }
+
+  return await response.json();
+};
