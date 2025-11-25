@@ -57,11 +57,11 @@ const items = [
     icon: <ShopOutlined />,
     label: "Quản lý đại lý",
     children: [
-      {
-        key: "contract",
-        icon: <FileTextOutlined />,
-        label: "Quản lý hợp đồng, chỉ tiêu doanh số, công nợ",
-      },
+      // {
+      //   key: "contract",
+      //   icon: <FileTextOutlined />,
+      //   label: "Quản lý hợp đồng, chỉ tiêu doanh số, công nợ",
+      // },
       {
         key: "account",
         icon: <UsergroupAddOutlined />,

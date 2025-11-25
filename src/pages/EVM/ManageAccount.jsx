@@ -10,27 +10,27 @@ import {
   Space,
   Tag,
   Modal,
+  Divider,
 } from "antd";
+
 import {
-  createAccount,
   getAllAccounts,
   banAccount,
   unbanAccount,
+  createAccountForDealer,
+  createEvdAccount,
+  registryDealer,
+  getDealerInfo,
 } from "../../api/authen";
+
 import {
   ReloadOutlined,
   LockOutlined,
   UnlockOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { App as AntdApp } from "antd";
 
-const roleOptions = [
-  { label: "Đại lý", value: "DEALER_MANAGER" },
-  { label: "Nhân viên đại lý", value: "DEALER_STAFF" },
-  { label: "Nhân viên công ty", value: "EVM_STAFF" },
-  { label: "Admin công ty", value: "EVM_ADMIN" },
-];
+import { App as AntdApp } from "antd";
 
 export default function ManageAccount() {
   const [form] = Form.useForm();
@@ -38,120 +38,191 @@ export default function ManageAccount() {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);
+
+  // dealer list
+  const [dealerList, setDealerList] = useState([]);
+
   const { notification } = AntdApp.useApp();
 
-  // Load accounts
+  // ======================= LOAD ACCOUNTS ==========================
   const loadAccounts = async () => {
     setTableLoading(true);
     try {
       const data = await getAllAccounts(0, 100);
       setAccounts(data.userInfoGetDtos || []);
     } catch (err) {
-      notification.error({
-        message: "Tải danh sách tài khoản thất bại!",
-      });
+      notification.error({ message: "Tải danh sách tài khoản thất bại!" });
     } finally {
       setTableLoading(false);
     }
   };
 
+  // load accounts on first render
   useEffect(() => {
     loadAccounts();
   }, []);
 
+  // ======================= LOAD DEALER INFO =======================
+  const loadDealerInfo = async () => {
+    try {
+      const data = await getDealerInfo();
+      setDealerList(data || []);
+    } catch (err) {
+      notification.error({
+        message: "Không tải được danh sách đại lý!",
+      });
+    }
+  };
+
+  // ======================= SUBMIT FORM ============================
   const onFinish = async (values) => {
     setLoading(true);
-    try {
-      const payload = { ...values };
 
-      if (payload.role !== "DEALER_STAFF") {
-        delete payload.parentPhone;
+    try {
+      const type = values.registerType;
+
+      // ========== API 1: Tạo đại lý + account đầu tiên ===========
+      if (type === "REGISTRY_DEALER") {
+        const payload = {
+          dealerInfo: {
+            dealerName: values.dealerName,
+            dealerPhone: values.dealerPhone,
+            dealerLevel: values.dealerLevel,
+            location: values.dealerLocation,
+          },
+          dealerAccount: {
+            dealerInfoId: null,
+            username: values.username,
+            password: values.password,
+            fullName: values.fullName,
+            email: values.email,
+            phone: values.phone,
+            city: values.city,
+            isActive: values.isActive,
+            role: "DEALER_MANAGER",
+          },
+        };
+
+        await registryDealer(payload);
       }
 
-      await createAccount(payload);
-      notification.success({
-        message: "Tạo tài khoản thành công!",
-      });
+      // ========== API 2: Tạo account đại lý ===========
+      else if (type === "CREATE_DEALER_ACCOUNT") {
+        const payload = {
+          dealerInfoId: values.dealerInfoId,
+          username: values.username,
+          password: values.password,
+          fullName: values.fullName,
+          email: values.email,
+          phone: values.phone,
+          city: values.city,
+          isActive: values.isActive,
+          role: values.role, // DEALER_MANAGER hoặc DEALER_STAFF
+        };
 
+        await createAccountForDealer(payload);
+      }
+
+      // ========== API 3: Tạo account hãng xe ===========
+      else if (type === "CREATE_EVD_ACCOUNT") {
+        const payload = {
+          username: values.username,
+          password: values.password,
+          fullName: values.fullName,
+          email: values.email,
+          phone: values.phone,
+          city: values.city,
+          isActive: values.isActive,
+          role: values.role, // EVD_STAFF hoặc EVD_ADMIN
+        };
+
+        await createEvdAccount(payload);
+      }
+
+      notification.success({ message: "Tạo tài khoản thành công!" });
       loadAccounts();
       form.resetFields();
       setModalOpen(false);
     } catch (error) {
+      console.log("API Error:", error);
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Đã xảy ra lỗi khi tạo tài khoản!";
+
       notification.error({
         message: "Tạo tài khoản thất bại!",
+        description: errorMessage,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBanAccount = async (userId) => {
+  // ======================= BAN / UNBAN ============================
+  const handleBan = async (userId) => {
     await banAccount(userId);
     loadAccounts();
-    notification.success({ message: "Vô hiệu hóa tài khoản thành công" });
+    notification.success({ message: "Đã vô hiệu hóa" });
   };
 
-  const handleUnbanAccount = async (userId) => {
+  const handleUnban = async (userId) => {
     await unbanAccount(userId);
     loadAccounts();
-    notification.success({ message: "Kích hoạt tài khoản thành công" });
+    notification.success({ message: "Đã kích hoạt" });
   };
 
+  // ======================= TABLE COLUMNS ==========================
   const columns = [
-    { title: "Tên đăng nhập", dataIndex: "username", key: "username" },
-    { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
-    { title: "Email", dataIndex: "email", key: "email" },
-    { title: "SĐT cá nhân", dataIndex: "phone", key: "phone" },
+    { title: "Username", dataIndex: "username" },
+    { title: "Họ và tên", dataIndex: "fullName" },
+    { title: "Email", dataIndex: "email" },
+    { title: "SĐT", dataIndex: "phone" },
     {
       title: "Vai trò",
       dataIndex: "role",
-      key: "role",
       render: (role) => {
-        const colorMap = {
+        const map = {
           DEALER_MANAGER: "green",
           DEALER_STAFF: "blue",
+          EVD_STAFF: "orange",
+          EVD_ADMIN: "purple",
           EVM_STAFF: "volcano",
-          EVM_ADMIN: "purple",
+          EVM_ADMIN: "red",
         };
-        const textMap = {
-          DEALER_MANAGER: "Đại lý",
-          DEALER_STAFF: "Nhân viên đại lý",
-          EVM_STAFF: "Nhân viên công ty",
-          EVM_ADMIN: "Admin công ty",
-        };
-        return <Tag color={colorMap[role]}>{textMap[role]}</Tag>;
+        return <Tag color={map[role]}>{role}</Tag>;
       },
     },
     {
       title: "Trạng thái",
       dataIndex: "isActive",
-      key: "isActive",
-      render: (active) =>
-        active ? (
-          <Tag color="success">Hoạt động</Tag>
+      render: (isActive) =>
+        isActive ? (
+          <Tag color="green">Active</Tag>
         ) : (
-          <Tag color="error">Vô hiệu</Tag>
+          <Tag color="red">Locked</Tag>
         ),
     },
     {
-      title: "Thao tác",
-      key: "action",
-      render: (_, record) => (
+      title: "Hành động",
+      render: (_, r) => (
         <Space>
-          {record.isActive ? (
+          {r.isActive ? (
             <Button
               danger
               icon={<LockOutlined />}
-              onClick={() => handleBanAccount(record.userId)}
+              onClick={() => handleBan(r.userId)}
             >
               Lock
             </Button>
           ) : (
             <Button
               type="primary"
+              className="bg-emerald-600"
               icon={<UnlockOutlined />}
-              className="bg-emerald-600 hover:bg-emerald-700"
-              onClick={() => handleUnbanAccount(record.userId)}
+              onClick={() => handleUnban(r.userId)}
             >
               Unlock
             </Button>
@@ -162,27 +233,25 @@ export default function ManageAccount() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col p-8 gap-8">
+    <div className="p-8">
       <Card
-        className="w-full max-w-6xl mx-auto shadow"
         title={
           <div className="flex justify-between items-center">
             <span className="text-emerald-700 font-semibold">
               Danh sách tài khoản
             </span>
             <div className="flex gap-3">
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={loadAccounts}
-                className="text-emerald-700 border-emerald-700"
-              >
+              <Button icon={<ReloadOutlined />} onClick={loadAccounts}>
                 Tải lại
               </Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                className="bg-emerald-600 hover:bg-emerald-700"
-                onClick={() => setModalOpen(true)}
+                className="bg-emerald-600"
+                onClick={() => {
+                  loadDealerInfo();
+                  setModalOpen(true);
+                }}
               >
                 Tạo tài khoản
               </Button>
@@ -199,8 +268,9 @@ export default function ManageAccount() {
         />
       </Card>
 
+      {/* ======================== MODAL TẠO ACCOUNT ======================== */}
       <Modal
-        title="Tạo tài khoản người dùng"
+        title="Tạo tài khoản"
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
@@ -213,71 +283,182 @@ export default function ManageAccount() {
           onFinish={onFinish}
           initialValues={{ isActive: true }}
         >
+          {/* Chọn loại tạo */}
           <Form.Item
-            label="Tên đăng nhập"
+            label="Loại đăng ký"
+            name="registerType"
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={[
+                {
+                  label: "Đăng ký Đại lý + account đầu tiên",
+                  value: "REGISTRY_DEALER",
+                },
+                {
+                  label: "Tạo Account cho Đại lý",
+                  value: "CREATE_DEALER_ACCOUNT",
+                },
+                {
+                  label: "Tạo Account cho Hãng xe",
+                  value: "CREATE_EVD_ACCOUNT",
+                },
+              ]}
+            />
+          </Form.Item>
+
+          {/* ====================== FORM PHỤ THAY ĐỔI THEO TYPE ====================== */}
+          <Form.Item noStyle shouldUpdate>
+            {({ getFieldValue }) => {
+              const t = getFieldValue("registerType");
+
+              // ========== API 1: Registry Dealer ==========
+              if (t === "REGISTRY_DEALER") {
+                return (
+                  <>
+                    <Divider>Thông tin Đại lý</Divider>
+                    <Form.Item
+                      name="dealerName"
+                      label="Tên đại lý"
+                      rules={[{ required: true }]}
+                    >
+                      <Input />
+                    </Form.Item>
+                    <Form.Item
+                      name="dealerPhone"
+                      label="SĐT đại lý"
+                      rules={[{ required: true }]}
+                    >
+                      <Input />
+                    </Form.Item>
+                    <Form.Item
+                      name="dealerLevel"
+                      label="Cấp đại lý"
+                      rules={[{ required: true }]}
+                    >
+                      <Input type="number" />
+                    </Form.Item>
+                    <Form.Item
+                      name="dealerLocation"
+                      label="Địa chỉ"
+                      rules={[{ required: true }]}
+                    >
+                      <Input />
+                    </Form.Item>
+
+                    <Divider>Account quản lý đại lý (DEALER_MANAGER)</Divider>
+                  </>
+                );
+              }
+
+              // ========== API 2: Tạo account đại lý ==========
+              if (t === "CREATE_DEALER_ACCOUNT") {
+                return (
+                  <>
+                    <Divider>Chọn đại lý</Divider>
+                    <Form.Item
+                      name="dealerInfoId"
+                      label="Đại lý"
+                      rules={[{ required: true }]}
+                    >
+                      <Select
+                        options={dealerList.map((d) => ({
+                          label: d.dealerName,
+                          value: d.dealerInfoId,
+                        }))}
+                      />
+                    </Form.Item>
+
+                    <Divider>Chọn vai trò</Divider>
+                    <Form.Item
+                      name="role"
+                      label="Role"
+                      rules={[{ required: true }]}
+                    >
+                      <Select
+                        options={[
+                          { label: "DEALER_MANAGER", value: "DEALER_MANAGER" },
+                          { label: "DEALER_STAFF", value: "DEALER_STAFF" },
+                        ]}
+                      />
+                    </Form.Item>
+                  </>
+                );
+              }
+
+              // ========== API 3: Tạo account hãng xe ==========
+              if (t === "CREATE_EVD_ACCOUNT") {
+                return (
+                  <>
+                    <Divider>Chọn vai trò</Divider>
+                    <Form.Item
+                      name="role"
+                      label="Role"
+                      rules={[{ required: true }]}
+                    >
+                      <Select
+                        options={[
+                          { label: "EVD_STAFF", value: "EVD_STAFF" },
+                          { label: "EVD_ADMIN", value: "EVD_ADMIN" },
+                        ]}
+                      />
+                    </Form.Item>
+                  </>
+                );
+              }
+
+              return null;
+            }}
+          </Form.Item>
+
+          {/* ====================== FORM DÙNG CHUNG 3 API ====================== */}
+          <Divider>Thông tin tài khoản</Divider>
+
+          <Form.Item
             name="username"
+            label="Username"
             rules={[{ required: true }]}
           >
             <Input />
           </Form.Item>
+
           <Form.Item
-            label="Mật khẩu"
             name="password"
+            label="Password"
             rules={[{ required: true }]}
           >
             <Input.Password />
           </Form.Item>
+
           <Form.Item
-            label="Họ và tên"
             name="fullName"
+            label="Họ tên"
             rules={[{ required: true }]}
           >
             <Input />
           </Form.Item>
+
           <Form.Item
-            label="Email"
             name="email"
+            label="Email"
             rules={[{ required: true }, { type: "email" }]}
           >
             <Input />
           </Form.Item>
+
           <Form.Item
-            label="SĐT cá nhân"
             name="phone"
+            label="Số điện thoại"
             rules={[{ required: true }]}
           >
             <Input />
           </Form.Item>
-          <Form.Item label="Thành phố" name="city" rules={[{ required: true }]}>
+
+          <Form.Item name="city" label="Thành phố" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item label="Vai trò" name="role" rules={[{ required: true }]}>
-            <Select options={roleOptions} />
-          </Form.Item>
-
-          <Form.Item
-            shouldUpdate={(prev, cur) => prev.role !== cur.role}
-            noStyle
-          >
-            {({ getFieldValue }) =>
-              getFieldValue("role") === "DEALER_STAFF" ? (
-                <Form.Item
-                  label="SĐT cấp trên (parentPhone)"
-                  name="parentPhone"
-                  rules={[{ required: true }]}
-                >
-                  <Input placeholder="Số điện thoại Dealer Manager" />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-
-          <Form.Item name="level" label="Level" rules={[{ required: true }]}>
-            <Input type="number" placeholder="VD: 0" />
-          </Form.Item>
-
-          <Form.Item name="isActive" valuePropName="checked" label="Trạng thái">
+          <Form.Item name="isActive" valuePropName="checked">
             <Checkbox>Hoạt động</Checkbox>
           </Form.Item>
         </Form>

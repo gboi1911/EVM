@@ -232,3 +232,70 @@ export const getCurrentDealerInfo = async () => {
 
   return await response.json();
 };
+
+export const createAccountForDealer = async (accountData) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/user/create-dealer-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(accountData),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Account creation for dealer failed: ${errorText}`);
+  }
+  return await response.json();
+};
+
+export const registryDealer = async (dealerData) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/dealer/registry-dealer`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(dealerData),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Dealer registration failed: ${errorText}`);
+  }
+  return await response.json();
+};
+
+export const createEvdAccount = async (accountData) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/user/create-evd-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(accountData),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`EVD Account creation failed: ${errorText}`);
+  }
+  return await response.json();
+};
+
+export const getDealerInfo = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/user/dealer-info`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch dealer info: ${errorText}`);
+  }
+  return await response.json();
+};
