@@ -1,19 +1,19 @@
 // src/pages/sales/PriceListPage.jsx
 import React, { useState, useEffect } from "react";
-import { Table, Card, Typography, Tag, Modal, notification, Image, Spin } from "antd";
+import { Table, Card, Typography, Tag, Modal, notification, Image, Spin, Space } from "antd";
 import { useAuth } from "../../context/AuthContext";
-import { getPriceListByLevel } from "../../api/price";
+import { getCurrentAndUpcomingPricePrograms } from "../../api/price"; 
 import moment from "moment";
 
 const { Title } = Typography;
 
-// Map ảnh xe
+// Map ảnh xe (Cập nhật key theo tên model trong JSON nếu cần)
 const CAR_IMAGES = {
-  "TESLA_MODEL_X": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1800,w_2880,c_fit,f_auto,q_auto:best/Model-X-Main-Hero-Desktop-RHD",
-  "TESLA_MODEL_S": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-S-Main-Hero-Desktop-LHD.jpg",
-  "TESLA_MODEL_3": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-3-Main-Hero-Desktop-LHD.jpg",
-  "TESLA_MODEL_Y": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1800,w_2880,c_fit,f_auto,q_auto:best/Model-Y-Main-Hero-Desktop-Global",
-  "TESLA_MODEL_Z": "https://example.com/placeholder-car.jpg",
+  "EV_MODEL_A": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1800,w_2880,c_fit,f_auto,q_auto:best/Model-X-Main-Hero-Desktop-RHD",
+  "EV_MODEL_B": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-S-Main-Hero-Desktop-LHD.jpg",
+  "EV_MODEL_C": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-3-Main-Hero-Desktop-LHD.jpg",
+  "EV_MODEL_D": "https://digitalassets.tesla.com/tesla-contents/image/upload/h_1800,w_2880,c_fit,f_auto,q_auto:best/Model-Y-Main-Hero-Desktop-Global",
+  "EV_MODEL_E": "https://digitalassets.tesla.com/tesla-contents/image/upload/f_auto,q_auto/Model-3-Main-Hero-Desktop-LHD.jpg",
 };
 
 export default function PriceList() {
@@ -25,21 +25,16 @@ export default function PriceList() {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Hàm fetch
     const fetchPricePrograms = async () => {
       setLoading(true);
       try {
-        // ❗️ LOGIC XỬ LÝ LEVEL QUAN TRỌNG:
-        // Nếu user có level (Manager) -> dùng user.level
-        // Nếu user không có level (Staff) -> gửi -1 (Backend tự lấy level của cha)
-        const levelToSend = (user.level !== null && user.level !== undefined) ? user.level : -1;
-
-        const data = await getPriceListByLevel(levelToSend);
+        // 2️⃣ Gọi API mới: current-and-upcoming
+        const data = await getCurrentAndUpcomingPricePrograms();
         setPricePrograms(data);
       } catch (error) {
         notification.error({
           message: "Lỗi",
-          description: "Không thể tải bảng giá",
+          description: "Không thể tải bảng giá hiện tại",
         });
         setPricePrograms([]);
       } finally {
@@ -47,7 +42,6 @@ export default function PriceList() {
       }
     };
 
-    // Gọi fetch khi đã có user
     if (!authLoading && user) {
       fetchPricePrograms();
     }
@@ -58,35 +52,41 @@ export default function PriceList() {
     setModalVisible(true);
   };
 
-  // Cấu hình cột bảng chính
+  // 3️⃣ Cấu hình cột bảng chính (Dựa trên JSON mới)
   const columns = [
     {
       title: "Mã CT",
       dataIndex: "priceProgramId",
       key: "priceProgramId",
-      width: 100,
+      width: 80,
+      align: 'center',
     },
     {
-      title: "Cấp đại lý",
-      dataIndex: "dealerHierarchy",
-      key: "dealerHierarchy",
-      render: (level) => <Tag color="blue">Cấp {level}</Tag>,
+      title: "Tên chương trình",
+      dataIndex: "priceProgramName", // Trường mới trong JSON
+      key: "priceProgramName",
+      render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>
     },
     {
-      title: "Ngày bắt đầu",
-      dataIndex: "startDate",
-      key: "startDate",
+      title: "Ngày hiệu lực",
+      dataIndex: "effectiveDate", // Trường mới thay cho startDate
+      key: "effectiveDate",
       render: (date) => moment(date).format("DD/MM/YYYY"),
     },
     {
-      title: "Ngày kết thúc",
-      dataIndex: "endDate",
-      key: "endDate",
-      render: (date) => moment(date).format("DD/MM/YYYY"),
+      title: "Trạng thái",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (active) => (
+        <Tag color={active ? "green" : "red"}>
+          {active ? "Đang hoạt động" : "Ngưng hoạt động"}
+        </Tag>
+      ),
     },
     {
       title: "Thao tác",
       key: "action",
+      align: 'center',
       render: (_, record) => (
         <a onClick={() => handleViewDetails(record)} style={{ color: "#059669", fontWeight: 500, cursor: "pointer" }}>
           Xem chi tiết
@@ -95,17 +95,18 @@ export default function PriceList() {
     },
   ];
 
-  // Cấu hình cột bảng chi tiết (Modal)
+  // 4️⃣ Cấu hình cột bảng chi tiết trong Modal (Dựa trên programDetails)
   const detailColumns = [
     {
       title: "Hình ảnh",
       key: "image",
+      width: 120,
       render: (_, record) => (
         <Image
-          width={100}
+          width={80}
           src={CAR_IMAGES[record.carModelName] || "https://via.placeholder.com/150?text=No+Image"} 
           alt={record.carModelName}
-          fallback="https://via.placeholder.com/150?text=Error"
+          style={{ borderRadius: 4 }}
         />
       ),
     },
@@ -113,30 +114,27 @@ export default function PriceList() {
       title: "Mẫu xe",
       dataIndex: "carModelName",
       key: "carModelName",
-      render: (text) => <span style={{ fontWeight: "bold" }}>{text}</span>
+      render: (text) => <span style={{ fontWeight: "bold", fontSize: 15 }}>{text}</span>
     },
     {
-      title: "Giá tối thiểu",
-      dataIndex: "minPrice",
-      key: "minPrice",
-      render: (price) =>
-        price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
+      title: "Loại màu",
+      dataIndex: "isSpecialColor", // Trường mới
+      key: "isSpecialColor",
+      render: (isSpecial) => (
+        <Tag color={isSpecial ? "purple" : "default"}>
+          {isSpecial ? "Màu đặc biệt" : "Tiêu chuẩn"}
+        </Tag>
+      )
     },
     {
-      title: "Giá đề xuất",
-      dataIndex: "suggestedPrice",
-      key: "suggestedPrice",
+      title: "Giá niêm yết",
+      dataIndex: "listedPrice", // Trường mới thay cho minPrice/maxPrice
+      key: "listedPrice",
+      align: 'right',
       render: (price) =>
-        <span style={{ color: "#059669", fontWeight: "bold" }}>
+        <span style={{ color: "#059669", fontWeight: "bold", fontSize: 16 }}>
             {price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
         </span>,
-    },
-    {
-      title: "Giá tối đa",
-      dataIndex: "maxPrice",
-      key: "maxPrice",
-      render: (price) =>
-        price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" }),
     },
   ];
 
@@ -153,7 +151,7 @@ export default function PriceList() {
       <Card bordered={false} style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <Title level={4} style={{ color: "#059669", margin: 0 }}>
-            Bảng giá theo cấp đại lý
+            Bảng giá hiện tại
           </Title>
         </div>
 
@@ -163,29 +161,37 @@ export default function PriceList() {
           dataSource={pricePrograms}
           rowKey="priceProgramId"
           pagination={{ pageSize: 10 }}
-          locale={{ emptyText: "Không có dữ liệu bảng giá" }}
+          locale={{ emptyText: "Không có chương trình giá nào." }}
         />
       </Card>
 
+      {/* Modal hiển thị chi tiết */}
       <Modal
         title={
-          <span style={{ color: "#059669", fontSize: 18, fontWeight: "bold" }}>
-            Chi tiết bảng giá - Cấp {selectedProgram?.dealerHierarchy}
-          </span>
+          <Space direction="vertical" size={0}>
+            <span style={{ color: "#059669", fontSize: 18, fontWeight: "bold" }}>
+               Chi tiết bảng giá
+            </span>
+            <span style={{ fontSize: 14, color: '#666', fontWeight: 'normal' }}>
+               {selectedProgram?.priceProgramName}
+            </span>
+          </Space>
         }
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-        width={1000}
+        width={900}
         style={{ top: 20 }}
       >
         {selectedProgram && (
           <Table
             columns={detailColumns}
-            dataSource={selectedProgram.programDetails}
+            // Dữ liệu lấy từ mảng programDetails trong JSON
+            dataSource={selectedProgram.programDetails} 
             rowKey="id"
             pagination={false}
-            scroll={{ y: 400 }} 
+            scroll={{ y: 500 }} 
+            bordered
           />
         )}
       </Modal>
