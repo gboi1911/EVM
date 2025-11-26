@@ -28,7 +28,7 @@ export default function PriceList() {
     const fetchPricePrograms = async () => {
       setLoading(true);
       try {
-        // 2️⃣ Gọi API mới: current-and-upcoming
+        // Gọi API mới: current-and-upcoming
         const data = await getCurrentAndUpcomingPricePrograms();
         setPricePrograms(data);
       } catch (error) {
@@ -52,7 +52,7 @@ export default function PriceList() {
     setModalVisible(true);
   };
 
-  // 3️⃣ Cấu hình cột bảng chính (Dựa trên JSON mới)
+  // Cấu hình cột bảng chính (Dựa trên JSON mới)
   const columns = [
     {
       title: "Mã CT",
@@ -63,13 +63,13 @@ export default function PriceList() {
     },
     {
       title: "Tên chương trình",
-      dataIndex: "priceProgramName", // Trường mới trong JSON
+      dataIndex: "priceProgramName", 
       key: "priceProgramName",
       render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>
     },
     {
       title: "Ngày hiệu lực",
-      dataIndex: "effectiveDate", // Trường mới thay cho startDate
+      dataIndex: "effectiveDate", 
       key: "effectiveDate",
       render: (date) => moment(date).format("DD/MM/YYYY"),
     },
@@ -95,12 +95,12 @@ export default function PriceList() {
     },
   ];
 
-  // 4️⃣ Cấu hình cột bảng chi tiết trong Modal (Dựa trên programDetails)
+  //Thay listedPrice bằng 3 cột giá mới
   const detailColumns = [
     {
       title: "Hình ảnh",
       key: "image",
-      width: 120,
+      width: 100,
       render: (_, record) => (
         <Image
           width={80}
@@ -114,25 +114,53 @@ export default function PriceList() {
       title: "Mẫu xe",
       dataIndex: "carModelName",
       key: "carModelName",
-      render: (text) => <span style={{ fontWeight: "bold", fontSize: 15 }}>{text}</span>
+      width: 120,
+      render: (text) => <span style={{ fontWeight: "bold", fontSize: 14 }}>{text}</span>
     },
     {
       title: "Loại màu",
-      dataIndex: "isSpecialColor", // Trường mới
+      dataIndex: "isSpecialColor",
       key: "isSpecialColor",
+      width: 120,
       render: (isSpecial) => (
         <Tag color={isSpecial ? "purple" : "default"}>
           {isSpecial ? "Màu đặc biệt" : "Tiêu chuẩn"}
         </Tag>
       )
     },
+    // 1. Giá tối thiểu
     {
-      title: "Giá niêm yết",
-      dataIndex: "listedPrice", // Trường mới thay cho minPrice/maxPrice
-      key: "listedPrice",
+      title: "Giá tối thiểu",
+      dataIndex: "minPrice", 
+      key: "minPrice",
       align: 'right',
+      width: 140,
       render: (price) =>
-        <span style={{ color: "#059669", fontWeight: "bold", fontSize: 16 }}>
+        <span style={{ color: "#595959" }}>
+            {price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+        </span>,
+    },
+    // 2. Giá đề xuất (Nổi bật hơn)
+    {
+      title: "Giá đề xuất",
+      dataIndex: "suggestedPrice", 
+      key: "suggestedPrice",
+      align: 'right',
+      width: 140,
+      render: (price) =>
+        <span style={{ color: "#059669", fontWeight: "bold", fontSize: 15 }}>
+            {price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+        </span>,
+    },
+    // 3. Giá tối đa
+    {
+      title: "Giá tối đa",
+      dataIndex: "maxPrice", 
+      key: "maxPrice",
+      align: 'right',
+      width: 140,
+      render: (price) =>
+        <span style={{ color: "#595959" }}>
             {price?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
         </span>,
     },
@@ -151,7 +179,7 @@ export default function PriceList() {
       <Card bordered={false} style={{ borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <Title level={4} style={{ color: "#059669", margin: 0 }}>
-            Bảng giá hiện tại
+            Bảng giá hiện tại và sắp tới
           </Title>
         </div>
 
@@ -180,13 +208,12 @@ export default function PriceList() {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-        width={900}
+        width={1000} // Tăng chiều rộng modal để chứa đủ 3 cột giá
         style={{ top: 20 }}
       >
         {selectedProgram && (
           <Table
             columns={detailColumns}
-            // Dữ liệu lấy từ mảng programDetails trong JSON
             dataSource={selectedProgram.programDetails} 
             rowKey="id"
             pagination={false}

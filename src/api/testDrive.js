@@ -72,6 +72,12 @@ export const cancelBooking = (bookingId) => {
   return apiClient.delete(`/booking/${bookingId}`);
 };
 
-export const getTrialCarModels = () => {
-  return apiClient.get("/carDetail-model/get-trial-model-carDetail");
+export const getTrialCarModels = async () => {
+  const res = await apiClient.get("/carDetail-model/get-trial-model-carDetail");
+
+  const filtered = (res.data || []).filter(model =>
+    model.carDetails?.some(detail => detail.carStatus === "TEST_DRIVE_ONLY")
+  );
+
+  return filtered;
 };
