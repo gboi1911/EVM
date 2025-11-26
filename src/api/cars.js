@@ -45,23 +45,19 @@ export const getAllCars = async (params) => {
 export const getCarModelsForSale = async () => {
   const token = localStorage.getItem("access_token");
 
-  const response = await fetch(
-    `${API_BASE}/carDetail-model/all`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const response = await fetch(`${API_BASE}/carDetail-model/all`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch car models for sale");
   }
   return await response.json();
 };
-
 
 // (Các hàm còn lại giữ nguyên)
 export const createCar = async (carData) => {

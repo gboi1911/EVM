@@ -14,6 +14,7 @@ import {
   Tabs,
   Upload,
   Image,
+  Popconfirm,
 } from "antd";
 import {
   PlusOutlined,
@@ -27,6 +28,7 @@ import {
   updateCar,
   createCar,
   postImageForCar,
+  removeCar,
 } from "../../api/car";
 import { App as AntdApp } from "antd";
 
@@ -241,6 +243,24 @@ export default function ManageCar() {
     }
   };
 
+  const handleDelete = async (carId) => {
+    try {
+      await removeCar(carId);
+      notification.success({
+        message: "Đã xóa xe",
+        description: `Xe ID ${carId} đã được xóa thành công.`,
+      });
+
+      await loadCars(pagination.current, pagination.pageSize);
+    } catch (err) {
+      console.error(err);
+      notification.error({
+        message: "Lỗi khi xóa",
+        description: "Không thể xóa xe. Vui lòng thử lại.",
+      });
+    }
+  };
+
   // Upload images for an existing car (triggered from table row)
   const openUploadModal = (record) => {
     setUploadTargetCar(record);
@@ -362,6 +382,14 @@ export default function ManageCar() {
           >
             Sửa
           </Button>
+          <Popconfirm
+            title="Bạn có chắc muốn xóa xe này?"
+            okText="Xóa"
+            cancelText="Hủy"
+            onConfirm={() => handleDelete(record.carId)}
+          >
+            <Button danger>Xóa</Button>
+          </Popconfirm>
           <Button
             icon={<UploadOutlined />}
             onClick={() => openUploadModal(record)}

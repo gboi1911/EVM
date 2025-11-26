@@ -252,7 +252,7 @@ export const createAccountForDealer = async (accountData) => {
 
 export const registryDealer = async (dealerData) => {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${API_BASE}/dealer/registry-dealer`, {
+  const response = await fetch(`${API_BASE}/user/registry-dealer`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -5,6 +5,7 @@ import {
   Modal,
   Form,
   InputNumber,
+  Checkbox,
   notification,
   Space,
   Popconfirm,
@@ -27,10 +28,15 @@ import {
 export default function ManagePriceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [formValues, setFormValues] = useState(null); // lưu dữ liệu form trước khi confirm
+
   const [form] = Form.useForm();
 
   const fetchProgram = async () => {
@@ -56,30 +62,61 @@ export default function ManagePriceDetail() {
     else form.resetFields();
   };
 
+  // Xử lý nút OK trong modal form
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      setLoading(true);
+
       if (editing) {
-        await updateDetailInPriceProgram(editing.id, values);
-        notification.success({ message: "Updated successfully" });
-      } else {
-        await addDetailToPriceProgram(id, values);
-        notification.success({ message: "Added successfully" });
+        setLoading(true);
+        try {
+          await updateDetailInPriceProgram(editing.id, values);
+          notification.success({ message: "Updated successfully" });
+          setModalOpen(false);
+          setEditing(null);
+          fetchProgram();
+        } catch {
+          notification.error({ message: "Update failed" });
+        } finally {
+          setLoading(false);
+        }
+        return;
       }
+
+      // CREATE MODE → lưu formValues và mở confirm modal controlled
+      setFormValues(values);
+      setConfirmModalOpen(true);
+    } catch (e) {
+      notification.error({ message: "Validation failed" });
+    }
+  };
+
+  // Xử lý khi user chọn Đồng Ý / Từ Chối
+  const handleConfirm = async (isAutoFilling) => {
+    setConfirmModalOpen(false);
+    if (!formValues) return;
+
+    setLoading(true);
+    try {
+      await addDetailToPriceProgram(id, { ...formValues }, isAutoFilling);
+      notification.success({
+        message: isAutoFilling
+          ? "Thêm thành công (tự động bổ sung giá)"
+          : "Thêm thành công (không autoFill)",
+      });
       setModalOpen(false);
-      setEditing(null);
       fetchProgram();
     } catch {
       notification.error({ message: "Operation failed" });
     } finally {
       setLoading(false);
+      setFormValues(null); // reset sau khi API xong
     }
   };
 
   const handleRemove = async (detailId) => {
+    setLoading(true);
     try {
-      setLoading(true);
       await removeDetailFromPriceProgram(detailId);
       notification.success({ message: "Deleted successfully" });
       fetchProgram();
@@ -106,6 +143,11 @@ export default function ManagePriceDetail() {
       title: "Giá cao nhất",
       dataIndex: "maxPrice",
       render: (val) => val?.toLocaleString(),
+    },
+    {
+      title: "Màu đặc biệt",
+      dataIndex: "isSpecialColor",
+      render: (val) => (val ? "✅" : "❌"),
     },
     {
       title: "Thao tác",
@@ -165,6 +207,7 @@ export default function ManagePriceDetail() {
         />
       </Card>
 
+      {/* Modal form */}
       <Modal
         title={editing ? "Cập nhật giá" : "Thêm giá mới"}
         open={modalOpen}
@@ -203,7 +246,29 @@ export default function ManagePriceDetail() {
           >
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
+          <Form.Item name="isSpecialColor" valuePropName="checked">
+            <Checkbox>Màu đặc biệt</Checkbox>
+          </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal confirm controlled */}
+      <Modal
+        title="Cảnh báo thiếu giá bán"
+        open={confirmModalOpen}
+        onCancel={() => setConfirmModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => handleConfirm(false)}>
+            TỪ CHỐI
+          </Button>,
+          <Button key="ok" type="primary" onClick={() => handleConfirm(true)}>
+            ĐỒNG Ý
+          </Button>,
+        ]}
+      >
+        Chương trình giá hiện tại chưa có giá cho một số mẫu xe.
+        <br />
+        Bạn có muốn hệ thống tự bổ sung giá bán từ chương trình gần nhất không?
       </Modal>
     </div>
   );

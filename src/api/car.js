@@ -197,3 +197,20 @@ export const finisheddOrder = async (orderId, carDetailId) => {
   }
   return await response.json();
 };
+
+export const removeCar = async (carId) => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/carDetail/${carId}/remove`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || "Car removal failed");
+  }
+
+  return true;
+};
