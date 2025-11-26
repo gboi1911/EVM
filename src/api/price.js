@@ -174,20 +174,20 @@ export const getAllPricePrograms = async () => {
   return await response.json();
 };
 
-// export const getPriceCurrentAndUpcoming = async () => {
-//   const token = localStorage.getItem("access_token");
-//   const response = await fetch(
-//     `${API_BASE}/price-program/current-and-upcoming`,
-//     {
-//       method: "GET",
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: `Bearer ${token}`,
-//       },
-//     }
-//   );
-//   if (!response.ok) {
-//     throw new Error("Failed to fetch current and upcoming price programs");
-//   }
-//   return await response.json();
-// };
+export const getCurrentAndUpcomingPricePrograms = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/price-program/current-and-upcoming`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch current and upcoming price programs");
+  }
+  return await response.json();
+};
