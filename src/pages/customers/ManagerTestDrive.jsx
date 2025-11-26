@@ -12,15 +12,15 @@ import {
   Typography,
 } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
-import dayjs from "dayjs"; 
-import { useAuth } from "../../context/AuthContext.jsx"; 
-import { 
-  createSlot, 
-  updateSlot, 
-  getTrialCarModels, 
+import dayjs from "dayjs";
+import { useAuth } from "../../context/AuthContext.jsx";
+import {
+  createSlot,
+  updateSlot,
+  getTrialCarModels,
   getSlotById
-} from "../../api/testDrive.js"; 
-import { getDealerStaff } from "../../api/authen.js"; 
+} from "../../api/testDrive.js";
+import { getDealerStaff } from "../../api/authen.js";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -30,10 +30,17 @@ export default function ManagerTestDrive() {
   const [loading, setLoading] = useState(false);
   const [carList, setCarList] = useState([]);
   const [carLoading, setCarLoading] = useState(true);
-  const [staffList, setStaffList] = useState([]); 
+  const [staffList, setStaffList] = useState([]);
   const navigate = useNavigate();
-  const { slotId } = useParams(); 
-  const { user } = useAuth(); 
+  const { slotId } = useParams();
+  const { user } = useAuth();
+
+  // --- 1. HÀM CHẶN NGÀY QUÁ KHỨ TRÊN UI ---
+  // Hàm này làm mờ các ngày trước ngày hôm nay trên lịch
+  const disabledDate = (current) => {
+    // Không được chọn ngày trước ngày hôm nay (startOf('day'))
+    return current && current < dayjs().startOf('day');
+  };
 
   // Tải cả xe VÀ nhân viên
   useEffect(() => {
@@ -42,11 +49,11 @@ export default function ManagerTestDrive() {
       try {
         const [carRes, staffRes] = await Promise.all([
           getTrialCarModels(),
-          getDealerStaff({ pageNo: 0, pageSize: 100 }) 
+          getDealerStaff({ pageNo: 0, pageSize: 100 })
         ]);
-        
+
         setCarList(carRes.data || []);
-        setStaffList(staffRes.userInfoGetDtos || []); 
+        setStaffList(staffRes.userInfoGetDtos || []);
 
       } catch (err) {
         message.error("Không tải được danh sách xe hoặc nhân viên: " + err.message);
@@ -62,15 +69,15 @@ export default function ManagerTestDrive() {
     if (slotId) {
       const fetchSlot = async () => {
         try {
-          const res = await getSlotById(slotId); 
+          const res = await getSlotById(slotId);
           const slot = res.data;
-          
+
           form.setFieldsValue({
-            dealerStaffId: slot.dealerStaffId, 
-            carModelId: slot.carModelInSlotDetailDto?.[0]?.carModelId, 
+            dealerStaffId: slot.dealerStaffId,
+            carModelId: slot.carModelInSlotDetailDto?.[0]?.carModelId,
             startTime: slot.startTime ? dayjs(slot.startTime) : null,
             endTime: slot.endTime ? dayjs(slot.endTime) : null,
-            numCustomers: slot.numCustomers || 1, 
+            numCustomers: slot.numCustomers || 1,
             maxTrialCar: slot.carModelInSlotDetailDto?.[0]?.maxTrialCar || 1,
           });
         } catch (err) {
@@ -81,7 +88,6 @@ export default function ManagerTestDrive() {
     }
   }, [slotId, form]);
 
-  // (Hàm Submit giữ nguyên)
   const onFinish = async (values) => {
     setLoading(true);
     try {
@@ -96,21 +102,21 @@ export default function ManagerTestDrive() {
 
       } else {
         const payload = {
-          dealerStaffId: values.dealerStaffId, 
+          dealerStaffId: values.dealerStaffId,
           startTime: values.startTime.toISOString(),
           endTime: values.endTime.toISOString(),
-          numCustomers: values.numCustomers, 
-          carModelInSlotPostDto: { 
+          numCustomers: values.numCustomers,
+          carModelInSlotPostDto: {
             carModelId: values.carModelId,
             maxTrialCar: values.maxTrialCar
           }
         };
-        await createSlot(payload); 
+        await createSlot(payload);
         message.success("Tạo slot lái thử mới thành công!");
       }
 
       form.resetFields();
-      navigate("/customers/test-drive"); 
+      navigate("/customers/test-drive");
     } catch (err) {
       message.error("Thao tác thất bại: " + err.message);
     } finally {
@@ -133,56 +139,92 @@ export default function ManagerTestDrive() {
         </Title>
         <Spin spinning={carLoading}>
           <Form form={form} layout="vertical" onFinish={onFinish}>
-            
+
             <Form.Item
               name="dealerStaffId"
               label="Chọn nhân viên phụ trách"
               rules={[{ required: true, message: "Vui lòng chọn nhân viên!" }]}
-              disabled={!!slotId} 
+              disabled={!!slotId}
             >
               <Select placeholder="Chọn nhân viên (DEALER_STAFF)">
                 {staffList.map((staff) => (
-                  // ❗️ SỬA LỖI Ở ĐÂY: Chỉ hiển thị staff.fullName
                   <Option key={staff.userId} value={staff.userId}>
                     {staff.fullName}
                   </Option>
                 ))}
               </Select>
             </Form.Item>
-            
+
             <Form.Item
               name="carModelId"
               label="Chọn xe (Model)"
               rules={[{ required: true, message: "Vui lòng chọn xe!" }]}
-              disabled={!!slotId} 
+              disabled={!!slotId}
             >
               <Select placeholder="Chọn xe được phép lái thử">
                 {carList.map((car) => (
                   <Option key={car.id} value={car.id}>
-                    {car.carModelName} 
+                    {car.carModelName}
                   </Option>
                 ))}
               </Select>
             </Form.Item>
 
+            {/* --- 2. CẬP NHẬT FORM ITEM START TIME --- */}
             <Form.Item
               name="startTime"
               label="Thời gian Bắt đầu"
-              rules={[{ required: true, message: "Vui lòng chọn thời gian!" }]}
+              rules={[
+                { required: true, message: "Vui lòng chọn thời gian!" },
+                // Validator để kiểm tra giờ/phút hiện tại
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    // Nếu là chế độ Edit (có slotId) thì có thể bỏ qua check quá khứ nếu muốn
+                    // Nhưng logic tạo mới bắt buộc phải check
+                    if (!value || value.isAfter(dayjs())) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('Vui lòng chọn thời gian bắt đầu sau thời điểm hiện tại.'));
+                  },
+                }),
+              ]}
             >
-              <DatePicker showTime style={{ width: "100%" }} format="DD/MM/YYYY HH:mm" />
+              <DatePicker
+                showTime
+                style={{ width: "100%" }}
+                format="DD/MM/YYYY HH:mm"
+                disabledDate={disabledDate} // Áp dụng chặn ngày trên lịch
+              />
             </Form.Item>
 
+            {/* --- 3. CẬP NHẬT FORM ITEM END TIME --- */}
             <Form.Item
               name="endTime"
               label="Thời gian Kết thúc"
-              rules={[{ required: true, message: "Vui lòng chọn thời gian!" }]}
+              dependencies={['startTime']} // Phụ thuộc vào startTime để so sánh
+              rules={[
+                { required: true, message: "Vui lòng chọn thời gian!" },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const startTime = getFieldValue('startTime');
+                    if (!value || !startTime || value.isAfter(startTime)) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.'));
+                  },
+                }),
+              ]}
             >
-              <DatePicker showTime style={{ width: "100%" }} format="DD/MM/YYYY HH:mm" />
+              <DatePicker
+                showTime
+                style={{ width: "100%" }}
+                format="DD/MM/YYYY HH:mm"
+                disabledDate={disabledDate} // Áp dụng chặn ngày trên lịch
+              />
             </Form.Item>
-            
+
             <Form.Item
-              name="numCustomers" 
+              name="numCustomers"
               label="Số lượng khách tối đa (Num of Customers)"
               rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
             >
@@ -193,7 +235,7 @@ export default function ManagerTestDrive() {
               name="maxTrialCar"
               label="Số lượng xe tối đa cho model này (Max Trial Car)"
               rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
-              disabled={!!slotId} 
+              disabled={!!slotId}
             >
               <InputNumber min={1} style={{ width: "100%" }} placeholder="Ví dụ: 3" />
             </Form.Item>
