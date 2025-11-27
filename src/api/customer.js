@@ -7,7 +7,7 @@ import apiClient from "../api/apiClient";
  */
 export const listCustomers = (params) => {
   // params có thể là { pageNo: 0, pageSize: 10 }
-  return apiClient.get('/dealer/customers', { params });
+  return apiClient.get("/dealer/customers", { params });
 };
 
 /**
@@ -16,7 +16,7 @@ export const listCustomers = (params) => {
  */
 export const createCustomer = (customerData) => {
   // customerData là: { fullName: "string", email: "string", phone: "string", address: "string" }
-  return apiClient.post('/dealer/customers', customerData);
+  return apiClient.post("/dealer/customers", customerData);
 };
 
 /**
@@ -25,7 +25,10 @@ export const createCustomer = (customerData) => {
  */
 export const updateCustomer = (customerId, customerData) => {
   // customerData là: { fullName: "string", email: "string", phone: "string", address: "string" }
-  return apiClient.patch(`/dealer/customers/${customerId}/update-info`, customerData);
+  return apiClient.patch(
+    `/dealer/customers/${customerId}/update-info`,
+    customerData
+  );
 };
 
 /**
@@ -34,7 +37,7 @@ export const updateCustomer = (customerId, customerData) => {
  */
 export const getCustomerByPhone = (phone) => {
   // API này có thể nhận SĐT qua query param
-  return apiClient.get('/dealer/customers/by-phone', { params: { phone } });
+  return apiClient.get("/dealer/customers/by-phone", { params: { phone } });
 };
 
 /**
@@ -42,9 +45,13 @@ export const getCustomerByPhone = (phone) => {
  * API: PATCH /api/v1/dealer/customers/update-info/by-phone
  */
 export const updateCustomerByPhone = (phone, customerData) => {
-    return apiClient.patch('/dealer/customers/update-info/by-phone', customerData, {
-        params: { phone } // Gửi SĐT qua query param
-    });
+  return apiClient.patch(
+    "/dealer/customers/update-info/by-phone",
+    customerData,
+    {
+      params: { phone }, // Gửi SĐT qua query param
+    }
+  );
 };
 
 /**
@@ -54,6 +61,11 @@ export const updateCustomerByPhone = (phone, customerData) => {
 export const updateCustomerInfo = (customerId, updateData) => {
   // updateData: { fullName, phone, email, address }
   return apiClient.patch(
-    `/dealer/customers/${customerId}/update-info`, updateData
+    `/dealer/customers/${customerId}/update-info`,
+    updateData
   );
+};
+
+export const getCustomerList = async (pageNo = 0, pageSize = 10) => {
+  return apiClient.get("/user/customer-list");
 };

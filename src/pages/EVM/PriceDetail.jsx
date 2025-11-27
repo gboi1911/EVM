@@ -10,6 +10,7 @@ import {
   Space,
   Popconfirm,
   Card,
+  Select,
 } from "antd";
 import {
   PlusOutlined,
@@ -24,10 +25,13 @@ import {
   updateDetailInPriceProgram,
   removeDetailFromPriceProgram,
 } from "../../api/price";
+import { getCarModel } from "../../api/car";
+import { App as AntdApp } from "antd";
 
 export default function ManagePriceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { notification } = AntdApp.useApp();
 
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +39,8 @@ export default function ManagePriceDetail() {
   const [editing, setEditing] = useState(null);
 
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [formValues, setFormValues] = useState(null); // lưu dữ liệu form trước khi confirm
+  const [formValues, setFormValues] = useState(null);
+  const [carModels, setCarModels] = useState([]);
 
   const [form] = Form.useForm();
 
@@ -60,6 +65,20 @@ export default function ManagePriceDetail() {
     setModalOpen(true);
     if (detail) form.setFieldsValue(detail);
     else form.resetFields();
+  };
+
+  useEffect(() => {
+    fetchProgram();
+    fetchCarModels();
+  }, [id]);
+
+  const fetchCarModels = async () => {
+    try {
+      const res = await getCarModel();
+      setCarModels(res || []);
+    } catch {
+      notification.error({ message: "Failed to load car models" });
+    }
   };
 
   // Xử lý nút OK trong modal form
@@ -217,11 +236,17 @@ export default function ManagePriceDetail() {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label="ID Mẫu xe"
+            label="Mẫu xe"
             name="carModelId"
-            rules={[{ required: true, message: "Please input car model ID" }]}
+            rules={[{ required: true, message: "Please select a car model" }]}
           >
-            <InputNumber style={{ width: "100%" }} />
+            <Select placeholder="Chọn mẫu xe">
+              {carModels.map((model) => (
+                <Select.Option key={model.id} value={model.id}>
+                  {model.carModelName}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item
             label="Giá thấp nhất"

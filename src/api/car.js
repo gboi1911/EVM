@@ -104,10 +104,10 @@ export const postImageForCar = async (carId, files) => {
 //     return await response.json();
 // };
 
-export const getRandomCarByModel = async (modelId, status) => {
+export const getRandomCarByModel = async (modelId, status, color) => {
   const token = localStorage.getItem("access_token");
   const response = await fetch(
-    `${API_BASE}/carDetail/random-detail-carDetail?carModelId=${modelId}&carDetailStatus=${status}`,
+    `${API_BASE}/carDetail/random-detail-carDetail?carModelId=${modelId}&carDetailStatus=${status}&color=${color}`,
     {
       method: "GET",
       headers: {
@@ -213,4 +213,19 @@ export const removeCar = async (carId) => {
   }
 
   return true;
+};
+
+export const getCarModel = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/carDetail-model/all`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch car models");
+  }
+  return await response.json();
 };

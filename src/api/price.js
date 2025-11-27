@@ -137,7 +137,7 @@ export const removeDetailFromPriceProgram = async (detailId) => {
   if (!response.ok) {
     throw new Error("Failed to remove detail from price program");
   }
-  return await response.json();
+  return true;
 };
 
 export const updateDetailInPriceProgram = async (detailId, detailData) => {

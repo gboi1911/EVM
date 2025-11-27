@@ -12,6 +12,7 @@ import {
   Card,
   Select,
   DatePicker,
+  Tag,
 } from "antd";
 import {
   PlusOutlined,
@@ -163,27 +164,32 @@ export default function ManagePrice() {
 
   const columns = [
     {
-      title: "ID",
+      title: "Mã chương trình",
       dataIndex: "priceProgramId",
       key: "priceProgramId",
       width: 80,
     },
     {
-      title: "Đại lý cấp",
-      dataIndex: "dealerHierarchy",
-      key: "dealerHierarchy",
+      title: "Tên chương trình",
+      dataIndex: "priceProgramName",
+      key: "priceProgramName",
     },
     {
-      title: "Ngày bắt đầu",
-      dataIndex: "startDate",
-      key: "startDate",
+      title: "Ngày hiệu lực",
+      dataIndex: "effectiveDate",
+      key: "effectiveDate",
       render: (text) => moment(text).utcOffset(7).format("DD/MM/YYYY HH:mm"),
     },
     {
-      title: "Ngày kết thúc",
-      dataIndex: "endDate",
-      key: "endDate",
-      render: (text) => moment(text).utcOffset(7).format("DD/MM/YYYY HH:mm"),
+      title: "Trạng thái",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (value) =>
+        value ? (
+          <Tag color="green">Đang hoạt động</Tag>
+        ) : (
+          <Tag color="red">Đã kết thúc</Tag>
+        ),
     },
     {
       title: "Thao tác",

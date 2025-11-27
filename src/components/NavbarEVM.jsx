@@ -13,6 +13,7 @@ import {
   BarChartOutlined,
   RobotOutlined,
   DashboardOutlined,
+  ProfileOutlined,
 } from "@ant-design/icons";
 import { getProfile } from "../api/authen";
 import logo from "../assets/logo.png";
@@ -43,7 +44,7 @@ const items = [
       {
         key: "inventory",
         icon: <ClusterOutlined />,
-        label: "Quản lý tồn kho tổng, điều phối xe",
+        label: "Lịch sử xuất nhập kho",
       },
       {
         key: "pricing",
@@ -72,6 +73,11 @@ const items = [
         icon: <ShopOutlined />,
         label: "Quản lý đơn hàng đại lý",
       },
+      {
+        key: "dealer",
+        icon: <ShopOutlined />,
+        label: "Quản lý đại lý",
+      },
     ],
   },
   {
@@ -95,6 +101,11 @@ const items = [
         label: "AI dự báo nhu cầu để lên kế hoạch sản xuất & phân phối",
       },
     ],
+  },
+  {
+    key: "customer",
+    icon: <ProfileOutlined />,
+    label: "Thông tin khách hàng",
   },
 ];
 
@@ -164,6 +175,12 @@ export default function NavbarEVM() {
     }
     if (e.key === "order") {
       navigate("/homeEVM/manage-order");
+    }
+    if (e.key === "dealer") {
+      navigate("/homeEVM/manage-dealer");
+    }
+    if (e.key === "customer") {
+      navigate("/homeEVM/manage-customer");
     }
   };
 

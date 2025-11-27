@@ -58,3 +58,21 @@ export const updateWarehouseCar = async (carId, warehouseData) => {
   }
   return await response.json();
 };
+
+export const getWarehouseHistory = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(
+    `${API_BASE}/warehouse-carDetail/admin/history`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch warehouse history");
+  }
+  return await response.json();
+};

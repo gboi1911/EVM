@@ -3,244 +3,201 @@ import {
   Table,
   Button,
   Modal,
-  Form,
-  Input,
-  Select,
-  Space,
-  Popconfirm,
-  notification,
   Card,
+  Tag,
+  Space,
+  Carousel,
+  Descriptions,
 } from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  SwapOutlined,
-} from "@ant-design/icons";
-
-// Dummy API functions (replace with your real API)
-const fetchInventory = async () => [
-  {
-    id: 1,
-    model: "VF e34",
-    version: "Premium",
-    color: "Trắng",
-    quantity: 20,
-    dealer: "Đại lý Hà Nội",
-  },
-  {
-    id: 2,
-    model: "VF 8",
-    version: "Eco",
-    color: "Đen",
-    quantity: 10,
-    dealer: "Đại lý Hồ Chí Minh",
-  },
-  {
-    id: 3,
-    model: "VF 9",
-    version: "Plus",
-    color: "Xanh",
-    quantity: 5,
-    dealer: "Đại lý Đà Nẵng",
-  },
-];
-const addInventory = async (data) => ({
-  ...data,
-  id: Math.floor(Math.random() * 1000),
-});
-const updateInventory = async (id, data) => ({ id, ...data });
-const removeInventory = async (id) => true;
-
-const modelOptions = [
-  { label: "VF e34", value: "VF e34" },
-  { label: "VF 8", value: "VF 8" },
-  { label: "VF 9", value: "VF 9" },
-];
-const versionOptions = [
-  { label: "Eco", value: "Eco" },
-  { label: "Plus", value: "Plus" },
-  { label: "Premium", value: "Premium" },
-];
-const colorOptions = [
-  { label: "Trắng", value: "Trắng" },
-  { label: "Đen", value: "Đen" },
-  { label: "Xanh", value: "Xanh" },
-  { label: "Đỏ", value: "Đỏ" },
-  { label: "Bạc", value: "Bạc" },
-];
-const dealerOptions = [
-  { label: "Đại lý Hà Nội", value: "Đại lý Hà Nội" },
-  { label: "Đại lý Hồ Chí Minh", value: "Đại lý Hồ Chí Minh" },
-  { label: "Đại lý Đà Nẵng", value: "Đại lý Đà Nẵng" },
-];
+import { EyeOutlined } from "@ant-design/icons";
+import { getWarehouseHistory } from "../../api/warehouse";
 
 export default function ManageInventory() {
-  const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form] = Form.useForm();
+  const [data, setData] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [selectedCar, setSelectedCar] = useState(null);
 
-  // Load inventory
-  useEffect(() => {
+  const fetchHistory = async () => {
     setLoading(true);
-    fetchInventory()
-      .then(setInventory)
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Open modal for add/update
-  const openModal = (record = null) => {
-    setEditing(record);
-    setModalOpen(true);
-    if (record) {
-      form.setFieldsValue(record);
-    } else {
-      form.resetFields();
-    }
-  };
-
-  // Add or update inventory
-  const handleOk = async () => {
     try {
-      const values = await form.validateFields();
-      setLoading(true);
-      if (editing) {
-        const updated = await updateInventory(editing.id, values);
-        setInventory((prev) =>
-          prev.map((item) => (item.id === editing.id ? updated : item))
-        );
-        notification.success({ message: "Cập nhật thành công!" });
-      } else {
-        const added = await addInventory(values);
-        setInventory((prev) => [...prev, added]);
-        notification.success({ message: "Thêm mới thành công!" });
-      }
-      setModalOpen(false);
-      setEditing(null);
-    } catch (err) {
-      // Validation error
+      const res = await getWarehouseHistory();
+      setData(res || []);
+    } catch {
+      console.error("Failed to load history");
     } finally {
       setLoading(false);
     }
   };
 
-  // Remove inventory
-  const handleRemove = async (id) => {
-    setLoading(true);
-    await removeInventory(id);
-    setInventory((prev) => prev.filter((item) => item.id !== id));
-    notification.success({ message: "Xóa thành công!" });
-    setLoading(false);
-  };
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    { title: "Mẫu xe", dataIndex: "model", key: "model" },
-    { title: "Phiên bản", dataIndex: "version", key: "version" },
-    { title: "Màu sắc", dataIndex: "color", key: "color" },
-    { title: "Số lượng", dataIndex: "quantity", key: "quantity" },
-    { title: "Đại lý", dataIndex: "dealer", key: "dealer" },
+    {
+      title: "Model",
+      dataIndex: ["car", "carModelName"],
+    },
+    {
+      title: "Tên xe",
+      dataIndex: ["car", "carName"],
+    },
+    {
+      title: "Màu",
+      dataIndex: ["car", "color"],
+      render: (color) => <Tag color="blue">{color}</Tag>,
+    },
+    {
+      title: "Nhập từ",
+      dataIndex: "fromLocation",
+    },
+    {
+      title: "Xuất đến",
+      dataIndex: "toLocation",
+    },
+    {
+      title: "Ngày",
+      dataIndex: "createdOn",
+      render: (date) => new Date(date).toLocaleString(),
+    },
     {
       title: "Thao tác",
-      key: "action",
       render: (_, record) => (
-        <Space>
-          <Button
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
-            type="link"
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc muốn xóa?"
-            onConfirm={() => handleRemove(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button icon={<DeleteOutlined />} type="link" danger>
-              Xóa
-            </Button>
-          </Popconfirm>
-        </Space>
+        <Button
+          icon={<EyeOutlined />}
+          type="link"
+          onClick={() => {
+            setSelectedCar(record.car);
+            setOpen(true);
+          }}
+        >
+          Xem xe
+        </Button>
       ),
     },
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 py-8 px-0 flex items-center justify-center">
-      <Card
-        className="w-full h-full max-w-7xl mx-auto shadow"
-        style={{ minHeight: "80vh", width: "100%" }}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-emerald-700">
-            Quản lý tồn kho tổng & điều phối xe cho đại lý
-          </h2>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => openModal()}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            Thêm mới
-          </Button>
-        </div>
+    <div className="p-8 bg-gray-50 min-h-screen flex flex-col items-center">
+      <Card className="w-full max-w-6xl shadow">
+        <h2 className="text-xl font-bold mb-4">Lịch sử Xuất – Nhập Kho</h2>
+
         <Table
-          columns={columns}
-          dataSource={inventory}
-          rowKey="id"
           loading={loading}
-          pagination={false}
+          columns={columns}
+          dataSource={data}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
         />
       </Card>
+
       <Modal
-        title={editing ? "Cập nhật tồn kho" : "Thêm mới tồn kho"}
-        open={modalOpen}
-        onOk={handleOk}
-        onCancel={() => setModalOpen(false)}
-        okText={editing ? "Cập nhật" : "Thêm mới"}
-        confirmLoading={loading}
+        open={open}
+        onCancel={() => setOpen(false)}
+        title="Chi tiết xe"
+        footer={null}
+        width={900}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="Mẫu xe"
-            name="model"
-            rules={[{ required: true, message: "Vui lòng chọn mẫu xe!" }]}
-          >
-            <Select options={modelOptions} placeholder="Chọn mẫu xe" />
-          </Form.Item>
-          <Form.Item
-            label="Phiên bản"
-            name="version"
-            rules={[{ required: true, message: "Vui lòng chọn phiên bản!" }]}
-          >
-            <Select options={versionOptions} placeholder="Chọn phiên bản" />
-          </Form.Item>
-          <Form.Item
-            label="Màu sắc"
-            name="color"
-            rules={[{ required: true, message: "Vui lòng chọn màu sắc!" }]}
-          >
-            <Select options={colorOptions} placeholder="Chọn màu sắc" />
-          </Form.Item>
-          <Form.Item
-            label="Số lượng"
-            name="quantity"
-            rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
-          >
-            <Input type="number" min={0} />
-          </Form.Item>
-          <Form.Item
-            label="Đại lý"
-            name="dealer"
-            rules={[{ required: true, message: "Vui lòng chọn đại lý!" }]}
-          >
-            <Select options={dealerOptions} placeholder="Chọn đại lý" />
-          </Form.Item>
-        </Form>
+        {selectedCar && (
+          <div className="p-2">
+            {/* CAROUSEL IMAGES */}
+            <Carousel autoplay>
+              {selectedCar.carImages?.map((img, i) => (
+                <div key={i}>
+                  <img
+                    src={img.fileUrl}
+                    alt="car"
+                    className="w-full h-80 object-cover rounded"
+                  />
+                </div>
+              ))}
+            </Carousel>
+
+            <Descriptions
+              bordered
+              column={2}
+              title="Thông tin xe"
+              className="mt-4"
+            >
+              <Descriptions.Item label="Model">
+                {selectedCar.carModelName}
+              </Descriptions.Item>
+              <Descriptions.Item label="Tên xe">
+                {selectedCar.carName}
+              </Descriptions.Item>
+              <Descriptions.Item label="Màu">
+                {selectedCar.color}
+              </Descriptions.Item>
+              <Descriptions.Item label="VIN">
+                {selectedCar.vinNumber}
+              </Descriptions.Item>
+              <Descriptions.Item label="Số máy">
+                {selectedCar.engineNumber}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* DIMENSIONS */}
+            <Descriptions
+              bordered
+              column={2}
+              title="Kích thước"
+              className="mt-4"
+            >
+              <Descriptions.Item label="Số ghế">
+                {selectedCar.dimension.seatNumber}
+              </Descriptions.Item>
+              <Descriptions.Item label="Cân nặng (lbs)">
+                {selectedCar.dimension.weightLbs}
+              </Descriptions.Item>
+              <Descriptions.Item label="Khoảng sáng gầm (in)">
+                {selectedCar.dimension.groundClearanceIn}
+              </Descriptions.Item>
+              <Descriptions.Item label="Chiều rộng gập gương (in)">
+                {selectedCar.dimension.widthFoldedIn}
+              </Descriptions.Item>
+              <Descriptions.Item label="Chiều rộng mở gương (in)">
+                {selectedCar.dimension.widthExtendedIn}
+              </Descriptions.Item>
+              <Descriptions.Item label="Chiều cao (in)">
+                {selectedCar.dimension.heightIn}
+              </Descriptions.Item>
+              <Descriptions.Item label="Chiều dài (mm)">
+                {selectedCar.dimension.lengthMm}
+              </Descriptions.Item>
+              <Descriptions.Item label="Mâm xe (cm)">
+                {selectedCar.dimension.wheelsSizeCm}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* PERFORMANCE */}
+            <Descriptions
+              bordered
+              column={2}
+              title="Thông số vận hành"
+              className="mt-4"
+            >
+              <Descriptions.Item label="Cự li (miles)">
+                {selectedCar.performanceDetailGetDto.rangeMiles}
+              </Descriptions.Item>
+              <Descriptions.Item label="0-60 mph (s)">
+                {selectedCar.performanceDetailGetDto.accelerationSec}
+              </Descriptions.Item>
+              <Descriptions.Item label="Tốc độ tối đa (mph)">
+                {selectedCar.performanceDetailGetDto.topSpeedMph}
+              </Descriptions.Item>
+              <Descriptions.Item label="Mã lực (lbs)">
+                {selectedCar.performanceDetailGetDto.towingLbs}
+              </Descriptions.Item>
+              <Descriptions.Item label="Pin">
+                {selectedCar.performanceDetailGetDto.battery}
+              </Descriptions.Item>
+              <Descriptions.Item label="Động cơ">
+                {selectedCar.performanceDetailGetDto.motor}
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        )}
       </Modal>
     </div>
   );

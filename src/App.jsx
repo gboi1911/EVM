@@ -44,6 +44,8 @@ const ManageSalesReport = React.lazy(() =>
 );
 const ManageOrder = React.lazy(() => import("./pages/EVM/Order"));
 const ManagePriceDetail = React.lazy(() => import("./pages/EVM/PriceDetail"));
+const ManageDealer = React.lazy(() => import("./pages/EVM/ManageDealer"));
+const ManageCustomer = React.lazy(() => import("./pages/EVM/ManageCustomer"));
 
 function App() {
   return (
@@ -108,6 +110,8 @@ function App() {
               />
               <Route path="price-detail/:id" element={<ManagePriceDetail />} />
               <Route path="manage-order" element={<ManageOrder />} />
+              <Route path="manage-dealer" element={<ManageDealer />} />
+              <Route path="manage-customer" element={<ManageCustomer />} />
               <Route path="profile" element={<Profile />} />
             </Route>
           </Route>
