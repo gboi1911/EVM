@@ -1,4 +1,4 @@
-// src/api/cars.js
+
 // const API_BASE = "http://3.26.198.116:8000/evdealer/api/v1";
 import { API_BASE } from "../config/api";
 
@@ -109,5 +109,20 @@ export const postImageForCar = async (carId, files) => {
     throw new Error("Image upload failed");
   }
 
+  return await response.json();
+};
+
+export const getCarDemoInDealer = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_BASE}/carDetail/car-demo-in-dealer`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch demo cars in dealer");
+  }
   return await response.json();
 };

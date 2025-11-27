@@ -47,12 +47,12 @@ export default function ManagerTestDrive() {
     const fetchData = async () => {
       setCarLoading(true);
       try {
-        const [carRes, staffRes] = await Promise.all([
-          getTrialCarModels(),
-          getDealerStaff({ pageNo: 0, pageSize: 100 })
-        ]);
+       const [carRes, staffRes] = await Promise.all([
+  getTrialCarModels(),
+  getDealerStaff({ pageNo: 0, pageSize: 100 })
+]);
 
-        setCarList(carRes.data || []);
+setCarList(carRes || []);
         setStaffList(staffRes.userInfoGetDtos || []);
 
       } catch (err) {

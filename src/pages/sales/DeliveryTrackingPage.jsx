@@ -5,19 +5,21 @@ import {
 } from "antd";
 import { 
   UserOutlined, DollarOutlined, CheckCircleOutlined,
-  FileTextOutlined, TruckOutlined, HomeOutlined, SmileOutlined, PlusOutlined
+  FileTextOutlined, TruckOutlined, HomeOutlined, SmileOutlined, PlusOutlined,
+  ShopOutlined 
 } from "@ant-design/icons";
 import { getListOrders, addPaymentToOrder, updateOrder } from "../../api/order";
 import { useAuth } from "../../context/AuthContext"; 
 
 const { Step } = Steps;
 
-// 1. VIỆT HÓA: Các bước trong Timeline
+// 1. VIỆT HÓA & CẬP NHẬT TIMELINE (Thêm đầy đủ các bước)
 const deliverySteps = [
   { title: "Chờ duyệt", description: "Đơn hàng mới tạo", icon: <FileTextOutlined />, status: "PENDING" },
   { title: "Đã duyệt", description: "Đã xác nhận đơn", icon: <CheckCircleOutlined />, status: "APPROVED" },
   { title: "Đang vận chuyển", description: "Xe đang trên đường giao", icon: <TruckOutlined />, status: "IN_DELIVERY" },
-  { title: "Đã giao xe", description: "Khách đã nhận xe", icon: <HomeOutlined />, status: "DELIVERED" },
+  { title: "Đã giao tới đại lý", description: "Xe đã tới kho", icon: <HomeOutlined />, status: "DELIVERED" },
+  { title: "Về đại lý", description: "Sẵn sàng bàn giao", icon: <ShopOutlined />, status: "IN_DEALER" }, 
   { title: "Hoàn tất", description: "Quy trình kết thúc", icon: <SmileOutlined />, status: "COMPLETED" }
 ];
 
@@ -33,20 +35,29 @@ const orderStatusMap = {
   PENDING: { text: "Chờ duyệt", color: "orange" },   
   APPROVED: { text: "Đã duyệt", color: "cyan" },     
   IN_DELIVERY: { text: "Đang vận chuyển", color: "blue" }, 
-  DELIVERED: { text: "Đã giao xe", color: "purple" }, 
+  DELIVERED: { text: "Đã giao tới đại lý", color: "geekblue" }, 
+  IN_DEALER: { text: "Đã về đại lý", color: "purple" },
   COMPLETED: { text: "Hoàn tất", color: "green" },   
   REJECTED: { text: "Đã từ chối", color: "red" },
   CANCELLED: { text: "Đã hủy", color: "gray" }
 };
 
-// 2. ACTION MAP: Cấu hình các nút chuyển trạng thái tiếp theo
+// 2. ACTION MAP: Chỉ định rõ trạng thái nào Dealer được thao tác
 const nextStepMap = {
-  PENDING: null,
-  APPROVED: null,      
-  // 👇 CẬP NHẬT Ở ĐÂY: Thêm hành động xác nhận giao xe
-  IN_DELIVERY: { next: "DELIVERED", text: "Xác nhận đã giao xe", icon: <HomeOutlined /> }, 
-  DELIVERED: { next: "COMPLETED", text: "Hoàn tất đơn", icon: <SmileOutlined /> },
-  COMPLETED: null
+ 
+  PENDING:null, 
+  
+  // Các bước ở giữa do bộ phận khác lo, Dealer không bấm được
+  APPROVED: null, 
+  IN_DELIVERY: null, 
+  DELIVERED: null,   
+
+  // Dealer bấm nút này để Hoàn tất đơn hàng
+  IN_DEALER: { next: "COMPLETED", text: "Bàn giao & Hoàn tất", icon: <SmileOutlined /> },
+  
+  COMPLETED: null,
+  CANCELLED: null,
+  REJECTED: null
 };
 
 export default function DeliveryTrackingPage() {
@@ -63,14 +74,18 @@ export default function DeliveryTrackingPage() {
   const { user, loading: authLoading } = useAuth();
   const isManager = useMemo(() => user && user.role === "DEALER_MANAGER", [user]);
 
-  // --- LẤY DANH SÁCH ĐƠN HÀNG ---
+  // --- LẤY DANH SÁCH ĐƠN HÀNG (FULL STATUS) ---
   const fetchAllOrders = async () => {
     if (!user) return; 
     try {
       setLoading(true);
-      const statuses = ["PENDING", "APPROVED", "IN_DELIVERY", "DELIVERED", "COMPLETED"];
+      // Lấy tất cả trạng thái để hiển thị đầy đủ
+      const statuses = [
+        "PENDING", "APPROVED", "IN_DELIVERY", 
+        "DELIVERED", "IN_DEALER", "COMPLETED", 
+        "CANCELLED", "REJECTED"
+      ];
       
-      // Logic gán Staff ID cho API
       const baseParams = {};
       if (user.role === "DEALER_STAFF") {
         baseParams.staffId = user.userId; 
@@ -85,12 +100,10 @@ export default function DeliveryTrackingPage() {
 
       const allOrders = responses.flatMap(res => res.data || res || []);
       
-      // Lọc lại phía Client dùng user.userId
       const filteredOrders = isManager 
         ? allOrders 
         : allOrders.filter(order => order.staff?.id == user.userId); 
 
-      // Loại bỏ đơn trùng lặp và sắp xếp
       const uniqueOrders = [...new Map(filteredOrders.map(item => [item.id, item])).values()];
       const sortedOrders = uniqueOrders.sort((a, b) => a.id - b.id);
       
@@ -141,7 +154,8 @@ export default function DeliveryTrackingPage() {
     setStatusUpdateLoading(true);
     try {
       await updateOrder(orderId, { status: newStatus });
-      message.success(`Đã cập nhật trạng thái sang: ${orderStatusMap[newStatus]?.text}`);
+      const statusText = orderStatusMap[newStatus]?.text || newStatus;
+      message.success(`Đã cập nhật trạng thái: ${statusText}`);
       await fetchAllOrders();
     } catch (err) {
       message.error("Cập nhật trạng thái thất bại: " + err.message);
@@ -195,7 +209,6 @@ export default function DeliveryTrackingPage() {
 
     const img = order.carDetail?.carImages?.[0]?.fileUrl;
 
-    // --- LOGIC TÍNH TOÁN THANH TOÁN ---
     const paid = order.amountPaid || 0;
     const total = order.totalAmount || 0;
     const paymentPercent = total > 0 ? ((paid / total) * 100).toFixed(0) : 0;
@@ -210,15 +223,17 @@ export default function DeliveryTrackingPage() {
 
     let progressColor = payInfo.color;
     if (isFullyPaid) progressColor = "#10b981";
-    // ----------------------------------
 
     const currentStep = getCurrentStep(order.status);
     const statusInfo = orderStatusMap[order.status] || { text: order.status, color: "#6b7280" };
     
+    // Lấy action dựa trên status hiện tại (Theo Map đã cấu hình ở trên)
     const nextAction = nextStepMap[order.status];
     const carName = order.carDetail?.carName || order.carModelGetDetailDto?.carModelName || "N/A";
 
-    const isActionDisabled = nextAction?.next === "COMPLETED" && !isFullyPaid;
+    // --- ĐÃ BỎ CHECK: !isFullyPaid ---
+    // Cho phép hoàn tất đơn hàng bất kể trạng thái thanh toán
+    // Backend sẽ tự xử lý công nợ
 
     return (
       <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
@@ -281,16 +296,19 @@ export default function DeliveryTrackingPage() {
           </Tag>
         </Card>
 
+        {/* Chỉ hiển thị nút hành động nếu nextAction != null */}
         {nextAction && (
           <Card title="Hành động" size="small">
             <p>Đơn hàng đang ở trạng thái: <b>{statusInfo.text}</b>.</p>
-            {isActionDisabled && <p style={{color: 'red', fontSize: 12}}>* Cần thanh toán đủ 100% để hoàn tất đơn hàng.</p>}
+            {/* Đã bỏ cảnh báo chữ đỏ ở đây */}
+            
             <Button
               type="primary"
               icon={nextAction.icon}
               loading={statusUpdateLoading}
               onClick={() => handleUpdateStatus(order.id, nextAction.next)}
-              disabled={isActionDisabled}
+              // Nút luôn bấm được (trừ khi đang loading)
+              disabled={statusUpdateLoading} 
             >
               {nextAction.text}
             </Button>
