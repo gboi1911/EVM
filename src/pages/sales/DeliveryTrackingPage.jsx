@@ -50,7 +50,7 @@ const nextStepMap = {
   // Các bước ở giữa do bộ phận khác lo, Dealer không bấm được
   APPROVED: null, 
   IN_DELIVERY: null, 
-  DELIVERED: null,   
+  DELIVERED: { next: "IN_DEALER", text: "Xác nhận đã giao", icon: <HomeOutlined /> },
 
   // Dealer bấm nút này để Hoàn tất đơn hàng
   IN_DEALER: { next: "COMPLETED", text: "Bàn giao & Hoàn tất", icon: <SmileOutlined /> },
