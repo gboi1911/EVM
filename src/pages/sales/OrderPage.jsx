@@ -31,6 +31,8 @@ const statusLabels = {
   PENDING: "Chờ duyệt",
   APPROVED: "Đã duyệt",
   IN_DELIVERY: "Đang vận chuyển",
+  DELIVERED: "Đã giao tới đại lý",
+  IN_DEALER: "Đã về đại lý",
   COMPLETED: "Hoàn tất",
   REJECTED: "Đã từ chối",
   CANCELLED: "Đã hủy",
@@ -40,6 +42,8 @@ const statusColors = {
   PENDING: "orange",
   APPROVED: "cyan",
   IN_DELIVERY: "blue",
+  DELIVERED: "geekblue", 
+  IN_DEALER: "purple",
   COMPLETED: "green",
   REJECTED: "red",
   CANCELLED: "gray",
@@ -71,6 +75,8 @@ export default function OrderPage() {
     PENDING: [],
     APPROVED: [],
     IN_DELIVERY: [],
+    DELIVERED: [],
+  IN_DEALER: [],
     COMPLETED: [],
     REJECTED: [],
     CANCELLED: [],
@@ -105,6 +111,8 @@ export default function OrderPage() {
           "PENDING",
           "APPROVED",
           "IN_DELIVERY",
+          "DELIVERED",
+          "IN_DEALER",
           "COMPLETED",
           "REJECTED",
           "CANCELLED",
@@ -126,6 +134,8 @@ export default function OrderPage() {
         PENDING: [],
         APPROVED: [],
         IN_DELIVERY: [],
+         DELIVERED: [],
+  IN_DEALER: [],
         COMPLETED: [],
         REJECTED: [],
         CANCELLED: [],
@@ -157,7 +167,7 @@ export default function OrderPage() {
     }
   }, [authLoading, user]);
 
-  // --- XỬ LÝ XEM CHI TIẾT ---
+  // --- XỬ LÝ XEM CHI TIẾT ---s
   const handleOpenDetail = async (record) => {
     setOpenDetailModal(true);
     setDetailLoading(true);
